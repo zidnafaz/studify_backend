@@ -14,7 +14,8 @@ class ClassSchedule extends Model
 
     protected $fillable = [
         'classroom_id',
-        'coordinator_id',
+        'coordinator_1',
+        'coordinator_2',
         'title',
         'start_time',
         'end_time',
@@ -38,11 +39,19 @@ class ClassSchedule extends Model
     }
 
     /**
-     * Get the coordinator of this schedule.
+     * Get the coordinator 1 of this schedule.
      */
-    public function coordinator(): BelongsTo
+    public function coordinator1(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'coordinator_id');
+        return $this->belongsTo(User::class, 'coordinator_1');
+    }
+
+    /**
+     * Get the coordinator 2 of this schedule.
+     */
+    public function coordinator2(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'coordinator_2');
     }
 
     /**

@@ -66,11 +66,19 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the class schedules where the user is coordinator.
+     * Get the class schedules where the user is coordinator 1.
      */
-    public function coordinatedSchedules()
+    public function coordinatedSchedules1()
     {
-        return $this->hasMany(ClassSchedule::class, 'coordinator_id');
+        return $this->hasMany(ClassSchedule::class, 'coordinator_1');
+    }
+
+    /**
+     * Get the class schedules where the user is coordinator 2.
+     */
+    public function coordinatedSchedules2()
+    {
+        return $this->hasMany(ClassSchedule::class, 'coordinator_2');
     }
 
     /**
