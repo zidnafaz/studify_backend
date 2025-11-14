@@ -38,7 +38,6 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'success' => false,
                 'message' => 'Validation errors',
                 'errors' => $validator->errors(),
             ], 422);
@@ -53,12 +52,12 @@ class AuthController extends Controller
         $token = Auth::login($user);
 
         return response()->json([
-            'success' => true,
-            'message' => 'User registered successfully',
-            'user' => $user,
-            'token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => Auth::factory()->getTTL() * 60,
+            'data' => [
+                'user' => $user,
+                'access_token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => Auth::factory()->getTTL() * 60,
+            ]
         ], 201);
     }
 
@@ -77,7 +76,6 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'success' => false,
                 'message' => 'Validation errors',
                 'errors' => $validator->errors(),
             ], 422);
@@ -87,7 +85,6 @@ class AuthController extends Controller
 
         if (!$token = Auth::attempt($credentials)) {
             return response()->json([
-                'success' => false,
                 'message' => 'Invalid email or password',
             ], 401);
         }
@@ -103,8 +100,7 @@ class AuthController extends Controller
     public function me()
     {
         return response()->json([
-            'success' => true,
-            'user' => Auth::user(),
+            'data' => Auth::user(),
         ]);
     }
 
@@ -117,10 +113,7 @@ class AuthController extends Controller
     {
         Auth::logout();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Successfully logged out',
-        ]);
+        return response()->json(null, 204);
     }
 
     /**
@@ -143,12 +136,12 @@ class AuthController extends Controller
     protected function respondWithToken($token)
     {
         return response()->json([
-            'success' => true,
-            'message' => 'Login successful',
-            'user' => Auth::user(),
-            'token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => Auth::factory()->getTTL() * 60,
+            'data' => [
+                'user' => Auth::user(),
+                'access_token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => Auth::factory()->getTTL() * 60,
+            ]
         ]);
     }
 }

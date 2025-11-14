@@ -15,10 +15,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Authentication Routes
-Route::group(['prefix' => 'auth'], function () {
-    Route::post('register', [AuthController::class, 'register']);
+Route::post('users', [AuthController::class, 'register']); // RESTful: POST /api/users for creating user
+
+Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
-    Route::post('logout', [AuthController::class, 'logout']);
+    Route::delete('login', [AuthController::class, 'logout']); // RESTful: DELETE to remove session
     Route::post('refresh', [AuthController::class, 'refresh']);
-    Route::get('me', [AuthController::class, 'me']);
+    Route::get('user', [AuthController::class, 'me']); // RESTful: GET /api/auth/user for current user
 });
