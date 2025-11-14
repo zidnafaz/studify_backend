@@ -33,7 +33,8 @@ class ClassScheduleSeeder extends Seeder
 
                 $schedules[] = [
                     'classroom_id' => $classroom->id,
-                    'coordinator_id' => $users->random(),
+                    'coordinator_1' => $users->random(),
+                    'coordinator_2' => $users->random(),
                     'title' => $classroom->name,
                     'start_time' => $startTime,
                     'end_time' => $endTime,
