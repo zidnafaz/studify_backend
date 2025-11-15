@@ -1,0 +1,274 @@
+### Studify Backend API - REST Client Tests
+### Base URL: https://studify-backend-api-dev.onrender.com
+### Created: 2025-11-15
+
+@baseUrl = https://studify-backend-api-dev.onrender.com
+@contentType = application/json
+
+###############################################
+# Health Check
+###############################################
+
+### 1. Health Check - Test if API is running
+GET {{baseUrl}}/api/health
+Accept: {{contentType}}
+
+###############################################
+# Authentication - User Registration
+###############################################
+
+### 2. Register New User
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+### 3. Register Another User (for testing)
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "secret123",
+  "password_confirmation": "secret123"
+}
+
+###############################################
+# Authentication - Login
+###############################################
+
+### 4. Login - Get Access Token
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### 5. Login - Wrong Password (Should Fail)
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "wrongpassword"
+}
+
+### 6. Login - User Not Exist (Should Fail)
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "notexist@example.com",
+  "password": "password123"
+}
+
+###############################################
+# Authentication - Protected Routes
+###############################################
+
+### 7. Get Current User Info (Requires Token)
+# Note: Copy token from login response and paste below
+GET {{baseUrl}}/api/auth/user
+Accept: {{contentType}}
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 8. Get Current User Info (Auto Token from Login)
+# This will automatically use token from request #4 (login)
+@authToken = {{login.response.body.access_token}}
+
+GET {{baseUrl}}/api/auth/user
+Accept: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+###############################################
+# Authentication - Refresh Token
+###############################################
+
+### 9. Refresh Access Token
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+###############################################
+# Authentication - Logout
+###############################################
+
+### 10. Logout User
+DELETE {{baseUrl}}/api/auth/login
+Authorization: Bearer {{authToken}}
+
+###############################################
+# Error Testing
+###############################################
+
+### 11. Access Protected Route Without Token (Should Fail)
+GET {{baseUrl}}/api/auth/user
+Accept: {{contentType}}
+
+### 12. Register with Invalid Email (Should Fail)
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "name": "Test",
+  "email": "not-an-email",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+### 13. Register with Mismatched Password (Should Fail)
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "name": "Test",
+  "email": "test2@example.com",
+  "password": "password123",
+  "password_confirmation": "different123"
+}
+
+### 14. Register with Duplicate Email (Should Fail)
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "name": "Duplicate User",
+  "email": "test@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+###############################################
+# Complete User Flow Test
+###############################################
+
+### 15. Complete Flow: Register → Login → Get User → Logout
+# Step 1: Register
+# @name flowRegister
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "name": "Flow Test User",
+  "email": "flowtest@example.com",
+  "password": "flowpass123",
+  "password_confirmation": "flowpass123"
+}
+
+### Step 2: Login
+# @name flowLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "flowtest@example.com",
+  "password": "flowpass123"
+}
+
+### Step 3: Get User Info
+@flowToken = {{flowLogin.response.body.access_token}}
+
+GET {{baseUrl}}/api/auth/user
+Accept: {{contentType}}
+Authorization: Bearer {{flowToken}}
+
+### Step 4: Refresh Token
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: {{contentType}}
+Authorization: Bearer {{flowToken}}
+
+### Step 5: Logout
+DELETE {{baseUrl}}/api/auth/login
+Authorization: Bearer {{flowToken}}
+
+### Step 6: Try Access After Logout (Should Fail)
+GET {{baseUrl}}/api/auth/user
+Accept: {{contentType}}
+Authorization: Bearer {{flowToken}}
+
+###############################################
+# Performance & Load Testing
+###############################################
+
+### 16. Multiple Health Checks (Quick Performance Test)
+GET {{baseUrl}}/api/health
+
+###
+GET {{baseUrl}}/api/health
+
+###
+GET {{baseUrl}}/api/health
+
+###
+GET {{baseUrl}}/api/health
+
+###
+GET {{baseUrl}}/api/health
+
+###############################################
+# Notes & Expected Responses
+###############################################
+
+### Expected Success Responses:
+# Health Check (200):
+# {
+#   "status": "ok",
+#   "timestamp": "2025-11-15T...",
+#   "database": "connected",
+#   "app": "Studify",
+#   "environment": "production"
+# }
+
+# Register (201):
+# {
+#   "user": {...},
+#   "access_token": "...",
+#   "token_type": "bearer",
+#   "expires_in": 3600
+# }
+
+# Login (200):
+# {
+#   "access_token": "...",
+#   "token_type": "bearer",
+#   "expires_in": 3600
+# }
+
+# Get User (200):
+# {
+#   "id": 1,
+#   "name": "...",
+#   "email": "...",
+#   ...
+# }
+
+# Logout (200):
+# {
+#   "message": "Successfully logged out"
+# }
+
+### Expected Error Responses:
+# Validation Error (422):
+# {
+#   "message": "...",
+#   "errors": {...}
+# }
+
+# Unauthorized (401):
+# {
+#   "message": "Unauthenticated."
+# }
+
+# Not Found (404):
+# {
+#   "message": "..."
+# }
