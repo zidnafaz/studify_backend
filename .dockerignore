@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.env.example
+node_modules
+tests
+.editorconfig
+.gitignore
+.gitattributes
+README.md
+phpunit.xml
+docker-compose.yml
+*.md
+.DS_Store
+Thumbs.db

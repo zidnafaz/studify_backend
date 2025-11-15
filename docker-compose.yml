@@ -1,0 +1,29 @@
+# Docker Compose for Local Testing
+# Hanya untuk test Docker image sebelum deploy ke Render
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      # Mount storage untuk development
+      - ./storage:/var/www/html/storage
+    networks:
+      - studify-network
+
+networks:
+  studify-network:
+    driver: bridge

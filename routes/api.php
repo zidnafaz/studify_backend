@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,24 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// Health Check Endpoint
+Route::get('health', function () {
+    try {
+        DB::connection()->getPdo();
+        $dbStatus = 'connected';
+    } catch (\Exception $e) {
+        $dbStatus = 'disconnected';
+    }
+
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now(),
+        'database' => $dbStatus,
+        'app' => config('app.name'),
+        'environment' => config('app.env')
+    ]);
+});
 
 // Authentication Routes
 Route::post('users', [AuthController::class, 'register']); // RESTful: POST /api/users for creating user
