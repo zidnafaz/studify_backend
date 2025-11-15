@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClassScheduleController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 
@@ -41,4 +42,14 @@ Route::prefix('auth')->group(function () {
     Route::delete('login', [AuthController::class, 'logout']); // RESTful: DELETE to remove session
     Route::post('refresh', [AuthController::class, 'refresh']);
     Route::get('user', [AuthController::class, 'me']); // RESTful: GET /api/auth/user for current user
+});
+
+// Class Schedule Routes - Protected by JWT
+// RESTful API for nested resource: /classrooms/{classroom}/schedules
+Route::middleware('auth:api')->group(function () {
+    // Nested resource routes for class schedules
+    Route::apiResource('classrooms.schedules', ClassScheduleController::class)->parameters([
+        'classrooms' => 'classroom',
+        'schedules' => 'schedule'
+    ]);
 });
