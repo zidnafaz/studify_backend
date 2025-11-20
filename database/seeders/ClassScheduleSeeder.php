@@ -15,7 +15,6 @@ class ClassScheduleSeeder extends Seeder
     public function run(): void
     {
         $classrooms = DB::table('classrooms')->get();
-        $users = DB::table('users')->pluck('id');
 
         $colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -23,6 +22,16 @@ class ClassScheduleSeeder extends Seeder
         $schedules = [];
 
         foreach ($classrooms as $classroom) {
+            // Get members of this classroom
+            $classroomMembers = DB::table('classroom_user')
+                ->where('classroom_id', $classroom->id)
+                ->pluck('user_id');
+
+            // Skip if no members
+            if ($classroomMembers->isEmpty()) {
+                continue;
+            }
+
             // Create 2-3 schedules per classroom
             for ($i = 0; $i < rand(2, 3); $i++) {
                 $day = $days[array_rand($days)];
@@ -33,8 +42,8 @@ class ClassScheduleSeeder extends Seeder
 
                 $schedules[] = [
                     'classroom_id' => $classroom->id,
-                    'coordinator_1' => $users->random(),
-                    'coordinator_2' => $users->random(),
+                    'coordinator_1' => $classroomMembers->random(),
+                    'coordinator_2' => $classroomMembers->count() > 1 ? $classroomMembers->random() : null,
                     'title' => $classroom->name,
                     'start_time' => $startTime,
                     'end_time' => $endTime,
