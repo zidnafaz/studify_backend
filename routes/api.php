@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\ClassScheduleController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,14 @@ Route::prefix('auth')->group(function () {
 // Class Schedule Routes - Protected by JWT
 // RESTful API for nested resource: /classrooms/{classroom}/schedules
 Route::middleware('auth:api')->group(function () {
+
+    // Classroom Routes
+    Route::apiResource('classrooms', ClassroomController::class);
+    Route::post('classrooms/join', [ClassroomController::class, 'join']);
+    Route::post('classrooms/{classroom}/leave', [ClassroomController::class, 'leave']);
+    Route::post('classrooms/{classroom}/remove-member', [ClassroomController::class, 'removeMember']);
+    Route::post('classrooms/{classroom}/transfer-ownership', [ClassroomController::class, 'transferOwnership']);
+
     // Nested resource routes for class schedules
     Route::apiResource('classrooms.schedules', ClassScheduleController::class)->parameters([
         'classrooms' => 'classroom',
