@@ -48,6 +48,7 @@ Route::prefix('auth')->group(function () {
 // Class Schedule Routes - Protected by JWT
 // RESTful API for nested resource: /classrooms/{classroom}/schedules
 Route::middleware('auth:api')->group(function () {
+
     // Classroom Routes
     Route::apiResource('classrooms', ClassroomController::class);
     Route::post('classrooms/join', [ClassroomController::class, 'join']);
