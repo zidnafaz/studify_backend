@@ -35,7 +35,8 @@ class Classroom extends Model
     {
         return $this->belongsToMany(User::class, 'classroom_user')
             ->withTimestamps()
-            ->withPivot('deleted_at');
+            ->withPivot('deleted_at')
+            ->wherePivotNull('deleted_at');
     }
 
     /**
