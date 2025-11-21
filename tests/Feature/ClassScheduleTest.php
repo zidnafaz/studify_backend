@@ -40,7 +40,7 @@ class ClassScheduleTest extends TestCase
         // Add owner as member (best practice untuk Opsi 2: Owner Transferable)
         // Owner HARUS jadi member juga untuk consistency
         $this->classroom->users()->attach($this->owner->id);
-        
+
         // Add regular member to classroom
         $this->classroom->users()->attach($this->member->id);
 
@@ -521,4 +521,286 @@ class ClassScheduleTest extends TestCase
                 ]
             ]);
     }
+
+    /**
+     * Test: Schedule detail includes coordinator users
+     */
+    public function test_schedule_detail_includes_coordinator_users()
+    {
+        $coordinator1 = User::factory()->create(['name' => 'Coordinator One']);
+        $coordinator2 = User::factory()->create(['name' => 'Coordinator Two']);
+
+        $schedule = ClassSchedule::factory()->create([
+            'classroom_id' => $this->classroom->id,
+            'coordinator_1' => $coordinator1->id,
+            'coordinator_2' => $coordinator2->id,
+        ]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->getJson("/api/classrooms/{$this->classroom->id}/schedules/{$schedule->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'coordinator1' => ['id', 'name', 'email'],
+                    'coordinator2' => ['id', 'name', 'email'],
+                    'classroom' => ['id', 'name'],
+                ]
+            ])
+            ->assertJson([
+                'data' => [
+                    'coordinator1' => [
+                        'name' => 'Coordinator One',
+                    ],
+                    'coordinator2' => [
+                        'name' => 'Coordinator Two',
+                    ],
+                ]
+            ]);
+    }
+
+    /**
+     * Test: Schedule detail includes classroom information
+     */
+    public function test_schedule_detail_includes_classroom_information()
+    {
+        $schedule = ClassSchedule::factory()->create([
+            'classroom_id' => $this->classroom->id,
+        ]);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->getJson("/api/classrooms/{$this->classroom->id}/schedules/{$schedule->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.classroom.id', $this->classroom->id)
+            ->assertJsonPath('data.classroom.name', $this->classroom->name);
+    }
+
+    /**
+     * Test: Owner can create repeating schedules
+     */
+    public function test_owner_can_create_repeating_schedules()
+    {
+        $scheduleData = [
+            'title' => 'Weekly Class',
+            'start_time' => '2025-11-20 08:00:00',
+            'end_time' => '2025-11-20 10:00:00',
+            'location' => 'Ruang 301',
+            'lecturer' => 'Dr. John Doe',
+            'description' => 'Weekly repeating class',
+            'color' => '#5CD9C1',
+            'repeat_days' => [1, 3, 5], // Monday, Wednesday, Friday
+            'repeat_count' => 3, // 3 weeks
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", $scheduleData);
+
+        $response->assertStatus(201)
+            ->assertJsonStructure([
+                'message',
+                'data' => [
+                    '*' => [
+                        'id',
+                        'title',
+                        'start_time',
+                        'end_time',
+                    ]
+                ]
+            ]);
+
+        // Should create multiple schedules (3 days × 3 weeks = up to 9 schedules)
+        $this->assertDatabaseHas('class_schedules', [
+            'classroom_id' => $this->classroom->id,
+            'title' => 'Weekly Class',
+        ]);
+
+        // Count schedules created
+        $scheduleCount = ClassSchedule::where('classroom_id', $this->classroom->id)
+            ->where('title', 'Weekly Class')
+            ->count();
+
+        $this->assertGreaterThan(1, $scheduleCount);
+    }
+
+    /**
+     * Test: Repeating schedules validation - repeat_days must be array
+     */
+    public function test_repeating_schedules_validation_repeat_days_must_be_array()
+    {
+        $scheduleData = [
+            'title' => 'Weekly Class',
+            'start_time' => '2025-11-20 08:00:00',
+            'end_time' => '2025-11-20 10:00:00',
+            'repeat_days' => 'invalid', // Should be array
+            'repeat_count' => 3,
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", $scheduleData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['repeat_days']);
+    }
+
+    /**
+     * Test: Repeating schedules validation - repeat_days values must be 1-7
+     */
+    public function test_repeating_schedules_validation_repeat_days_values_must_be_valid()
+    {
+        $scheduleData = [
+            'title' => 'Weekly Class',
+            'start_time' => '2025-11-20 08:00:00',
+            'end_time' => '2025-11-20 10:00:00',
+            'repeat_days' => [1, 8], // 8 is invalid (should be 1-7)
+            'repeat_count' => 3,
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", $scheduleData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['repeat_days.1']);
+    }
+
+    /**
+     * Test: Repeating schedules validation - repeat_count max is 52
+     */
+    public function test_repeating_schedules_validation_repeat_count_max_is_52()
+    {
+        $scheduleData = [
+            'title' => 'Weekly Class',
+            'start_time' => '2025-11-20 08:00:00',
+            'end_time' => '2025-11-20 10:00:00',
+            'repeat_days' => [1],
+            'repeat_count' => 53, // Exceeds max of 52
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", $scheduleData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['repeat_count']);
+    }
+
+    /**
+     * Test: Repeating schedules validation - repeat_count min is 1
+     */
+    public function test_repeating_schedules_validation_repeat_count_min_is_1()
+    {
+        $scheduleData = [
+            'title' => 'Weekly Class',
+            'start_time' => '2025-11-20 08:00:00',
+            'end_time' => '2025-11-20 10:00:00',
+            'repeat_days' => [1],
+            'repeat_count' => 0, // Below min of 1
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", $scheduleData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['repeat_count']);
+    }
+
+    /**
+     * Test: Single schedule when repeat_count is 1
+     */
+    public function test_single_schedule_created_when_repeat_count_is_1()
+    {
+        $scheduleData = [
+            'title' => 'Single Class',
+            'start_time' => '2025-11-20 08:00:00',
+            'end_time' => '2025-11-20 10:00:00',
+            'repeat_days' => [1],
+            'repeat_count' => 1, // Should create single schedule
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", $scheduleData);
+
+        $response->assertStatus(201);
+
+        // Should create only 1 schedule
+        $scheduleCount = ClassSchedule::where('classroom_id', $this->classroom->id)
+            ->where('title', 'Single Class')
+            ->count();
+
+        $this->assertEquals(1, $scheduleCount);
+    }
+
+    /**
+     * Test: Repeating schedules sets coordinators to owner by default
+     */
+    public function test_repeating_schedules_sets_coordinators_to_owner_by_default()
+    {
+        $scheduleData = [
+            'title' => 'Weekly Class',
+            'start_time' => '2025-11-20 08:00:00',
+            'end_time' => '2025-11-20 10:00:00',
+            'repeat_days' => [1],
+            'repeat_count' => 2,
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", $scheduleData);
+
+        $response->assertStatus(201);
+
+        // All created schedules should have owner as both coordinators
+        $schedules = ClassSchedule::where('classroom_id', $this->classroom->id)
+            ->where('title', 'Weekly Class')
+            ->get();
+
+        foreach ($schedules as $schedule) {
+            $this->assertEquals($this->classroom->owner_id, $schedule->coordinator_1);
+            $this->assertEquals($this->classroom->owner_id, $schedule->coordinator_2);
+        }
+    }
+
+    /**
+     * Test: Repeating schedules can have custom coordinators
+     */
+    public function test_repeating_schedules_can_have_custom_coordinators()
+    {
+        $coordinator1 = User::factory()->create();
+        $coordinator2 = User::factory()->create();
+
+        $scheduleData = [
+            'title' => 'Weekly Class',
+            'start_time' => '2025-11-20 08:00:00',
+            'end_time' => '2025-11-20 10:00:00',
+            'repeat_days' => [1],
+            'repeat_count' => 2,
+            'coordinator_1' => $coordinator1->id,
+            'coordinator_2' => $coordinator2->id,
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", $scheduleData);
+
+        $response->assertStatus(201);
+
+        // All created schedules should have custom coordinators
+        $schedules = ClassSchedule::where('classroom_id', $this->classroom->id)
+            ->where('title', 'Weekly Class')
+            ->get();
+
+        foreach ($schedules as $schedule) {
+            $this->assertEquals($coordinator1->id, $schedule->coordinator_1);
+            $this->assertEquals($coordinator2->id, $schedule->coordinator_2);
+        }
+    }
 }
+

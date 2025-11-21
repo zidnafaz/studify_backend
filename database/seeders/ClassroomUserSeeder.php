@@ -14,24 +14,40 @@ class ClassroomUserSeeder extends Seeder
     public function run(): void
     {
         $users = DB::table('users')->pluck('id');
-        $classrooms = DB::table('classrooms')->pluck('id');
+        $classrooms = DB::table('classrooms')->get();
 
         $classroomUsers = [];
 
-        foreach ($classrooms as $classroomId) {
-            // Add 3-7 random users to each classroom
-            $randomUsers = $users->random(rand(3, 7));
+        foreach ($classrooms as $classroom) {
+            // Get existing members (owner already added in ClassroomSeeder)
+            $existingMembers = DB::table('classroom_user')
+                ->where('classroom_id', $classroom->id)
+                ->pluck('user_id')
+                ->toArray();
 
-            foreach ($randomUsers as $userId) {
-                $classroomUsers[] = [
-                    'classroom_id' => $classroomId,
-                    'user_id' => $userId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+            // Get available users (not owner, not already member)
+            $availableUsers = $users->filter(function ($userId) use ($existingMembers) {
+                return !in_array($userId, $existingMembers);
+            });
+
+            // Add 2-6 more random users to each classroom (owner already added, so total will be 3-7)
+            if ($availableUsers->isNotEmpty()) {
+                $numberOfUsers = min(rand(2, 6), $availableUsers->count());
+                $randomUsers = $availableUsers->random(min($numberOfUsers, $availableUsers->count()));
+
+                foreach ($randomUsers as $userId) {
+                    $classroomUsers[] = [
+                        'classroom_id' => $classroom->id,
+                        'user_id' => $userId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
             }
         }
 
-        DB::table('classroom_user')->insert($classroomUsers);
+        if (!empty($classroomUsers)) {
+            DB::table('classroom_user')->insert($classroomUsers);
+        }
     }
 }
