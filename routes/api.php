@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+// 1. Panggil Controller yang baru kita buat tadi
+use App\Http\Controllers\PersonalScheduleController; 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 
@@ -8,14 +10,9 @@ use Illuminate\Support\Facades\DB;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
 */
 
-// Health Check Endpoint
+// --- Health Check Endpoint (Bawaan Temanmu) ---
 Route::get('health', function () {
     try {
         DB::connection()->getPdo();
@@ -33,12 +30,23 @@ Route::get('health', function () {
     ]);
 });
 
-// Authentication Routes
-Route::post('users', [AuthController::class, 'register']); // RESTful: POST /api/users for creating user
+// --- Public Routes (Bisa diakses tanpa login) ---
+Route::post('users', [AuthController::class, 'register']); 
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
-    Route::delete('login', [AuthController::class, 'logout']); // RESTful: DELETE to remove session
+    Route::delete('login', [AuthController::class, 'logout']);
     Route::post('refresh', [AuthController::class, 'refresh']);
-    Route::get('user', [AuthController::class, 'me']); // RESTful: GET /api/auth/user for current user
+    Route::get('user', [AuthController::class, 'me']);
+});
+
+// --- PROTECTED ROUTES (Harus Login dulu baru bisa akses) ---
+// Kita pakai 'auth:api' karena proyek ini pakai JWT
+Route::middleware('auth:api')->group(function () {
+
+    // INI BAGIAN TUGASMU:
+    // Mendaftarkan rute CRUD untuk Personal Schedule
+    // Otomatis membuat alamat: GET, POST, PUT, DELETE ke /personal-schedules
+    Route::apiResource('personal-schedules', PersonalScheduleController::class);
+
 });
