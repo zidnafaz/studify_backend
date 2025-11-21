@@ -3,7 +3,8 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\ClassScheduleController;
-use App\Http\Controllers\PersonalScheduleController; 
+use App\Http\Controllers\CombinedScheduleController;
+use App\Http\Controllers\PersonalScheduleController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +33,7 @@ Route::get('health', function () {
 });
 
 // --- Public Routes (Bisa diakses tanpa login) ---
-Route::post('users', [AuthController::class, 'register']); 
+Route::post('users', [AuthController::class, 'register']);
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
@@ -41,8 +42,7 @@ Route::prefix('auth')->group(function () {
     Route::get('user', [AuthController::class, 'me']);
 });
 
-// Class Schedule Routes - Protected by JWT
-// RESTful API for nested resource: /classrooms/{classroom}/schedules
+// --- Protected Routes (Hanya bisa diakses jika sudah login) ---
 Route::middleware('auth:api')->group(function () {
 
     // Classroom Routes
@@ -57,6 +57,6 @@ Route::middleware('auth:api')->group(function () {
         'classrooms' => 'classroom',
         'schedules' => 'schedule'
     ]);
-    
-  Route::apiResource('personal-schedules', PersonalScheduleController::class);
+
+    Route::apiResource('personal-schedules', PersonalScheduleController::class);
 });

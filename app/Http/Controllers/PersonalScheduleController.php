@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PersonalSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class PersonalScheduleController extends Controller
 {
@@ -17,11 +18,10 @@ class PersonalScheduleController extends Controller
         // Kita cuma ambil jadwal milik user yang sedang LOGIN
         // Jadi user A tidak bisa lihat jadwal user B.
         $schedules = PersonalSchedule::where('user_id', Auth::id())
-                        ->orderBy('start_time', 'asc')
-                        ->get();
+            ->orderBy('start_time', 'asc')
+            ->get();
 
         return response()->json([
-            'success' => true,
             'data' => $schedules
         ]);
     }
@@ -32,26 +32,30 @@ class PersonalScheduleController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validasi data yang dikirim dari Frontend (Flutter)
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'start_time' => 'required|date',
-            'end_time' => 'required|date|after:start_time', // Waktu selesai harus setelah mulai
-            'location' => 'nullable|string',
+            'end_time' => 'required|date|after:start_time',
+            'location' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'color' => 'nullable|string',
+            'color' => 'nullable|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
 
-        // 2. Otomatis isi user_id dengan ID user yang sedang login
-        $validated['user_id'] = Auth::id();
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation errors',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-        // 3. Simpan ke Database
-        $schedule = PersonalSchedule::create($validated);
+        $data = $validator->validated();
+        $data['user_id'] = Auth::id();
+
+        $schedule = PersonalSchedule::create($data);
 
         return response()->json([
-            'success' => true,
-            'message' => 'Jadwal berhasil dibuat',
-            'data' => $schedule
+            'message' => 'Jadwal pribadi berhasil dibuat',
+            'data' => $schedule,
         ], 201);
     }
 
@@ -60,14 +64,17 @@ class PersonalScheduleController extends Controller
      */
     public function show($id)
     {
-        // Cari jadwal berdasarkan ID, tapi harus punya user yang login
         $schedule = PersonalSchedule::where('user_id', Auth::id())->find($id);
 
         if (!$schedule) {
-            return response()->json(['message' => 'Jadwal tidak ditemukan atau bukan milikmu'], 404);
+            return response()->json([
+                'message' => 'Jadwal pribadi tidak ditemukan',
+            ], 404);
         }
 
-        return response()->json(['success' => true, 'data' => $schedule]);
+        return response()->json([
+            'data' => $schedule,
+        ]);
     }
 
     /**
@@ -76,30 +83,35 @@ class PersonalScheduleController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Pastikan jadwal itu milik user yang login
         $schedule = PersonalSchedule::where('user_id', Auth::id())->find($id);
 
         if (!$schedule) {
-            return response()->json(['message' => 'Jadwal tidak ditemukan'], 404);
+            return response()->json([
+                'message' => 'Jadwal pribadi tidak ditemukan',
+            ], 404);
         }
 
-        // Validasi input baru
-        $validated = $request->validate([
-            'title' => 'sometimes|string|max:255',
-            'start_time' => 'sometimes|date',
-            'end_time' => 'sometimes|date|after:start_time',
-            'location' => 'nullable|string',
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|required|string|max:255',
+            'start_time' => 'sometimes|required|date',
+            'end_time' => 'sometimes|required|date|after:start_time',
+            'location' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'color' => 'nullable|string',
+            'color' => 'nullable|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
         ]);
 
-        // Update data
-        $schedule->update($validated);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation errors',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $schedule->update($validator->validated());
 
         return response()->json([
-            'success' => true,
-            'message' => 'Jadwal berhasil diupdate',
-            'data' => $schedule
+            'message' => 'Jadwal pribadi berhasil diperbarui',
+            'data' => $schedule,
         ]);
     }
 
@@ -109,19 +121,18 @@ class PersonalScheduleController extends Controller
      */
     public function destroy($id)
     {
-        // Cari jadwal milik user
         $schedule = PersonalSchedule::where('user_id', Auth::id())->find($id);
 
         if (!$schedule) {
-            return response()->json(['message' => 'Jadwal tidak ditemukan'], 404);
+            return response()->json([
+                'message' => 'Jadwal pribadi tidak ditemukan',
+            ], 404);
         }
 
-        // Hapus (Soft Delete)
         $schedule->delete();
 
         return response()->json([
-            'success' => true,
-            'message' => 'Jadwal berhasil dihapus'
+            'message' => 'Jadwal pribadi berhasil dihapus',
         ]);
     }
 }
