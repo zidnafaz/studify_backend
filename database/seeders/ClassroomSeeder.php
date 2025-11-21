@@ -60,6 +60,16 @@ class ClassroomSeeder extends Seeder
             ],
         ];
 
-        DB::table('classrooms')->insert($classrooms);
+        foreach ($classrooms as $classroomData) {
+            $classroomId = DB::table('classrooms')->insertGetId($classroomData);
+
+            // Automatically add owner as member
+            DB::table('classroom_user')->insert([
+                'classroom_id' => $classroomId,
+                'user_id' => $classroomData['owner_id'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 }

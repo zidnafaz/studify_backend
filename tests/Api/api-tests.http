@@ -2,7 +2,7 @@
 ### Base URL: https://studify-backend-api-dev.onrender.com
 ### Created: 2025-11-15
 
-@baseUrl = https://studify-backend-api-dev.onrender.com
+@baseUrl = http://127.0.0.1:8000
 @contentType = application/json
 
 ###############################################
@@ -271,4 +271,617 @@ GET {{baseUrl}}/api/health
 # Not Found (404):
 # {
 #   "message": "..."
+# }
+
+###############################################
+# Classroom Management - Authentication Setup
+###############################################
+
+### 17. Login as Owner (for Classroom Tests)
+# @name ownerLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### 18. Login as Member (for Classroom Tests)
+# @name memberLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "alden83@example.com",
+  "password": "password"
+}
+
+@ownerToken = {{ownerLogin.response.body.data.access_token}}
+@memberToken = {{memberLogin.response.body.data.access_token}}
+
+###############################################
+# Classroom Management - List Classrooms
+###############################################
+
+### 19. Get All Classrooms (Owner)
+GET {{baseUrl}}/api/classrooms
+Accept: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+### 20. Get All Classrooms (Member)
+GET {{baseUrl}}/api/classrooms
+Accept: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+### 21. Get All Classrooms (Unauthenticated - Should Fail)
+GET {{baseUrl}}/api/classrooms
+Accept: {{contentType}}
+
+###############################################
+# Classroom Management - Create Classroom
+###############################################
+
+### 22. Create Classroom - Success
+# @name createClassroom
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Pemrograman Web",
+  "description": "Kelas untuk belajar pemrograman web menggunakan Laravel dan Flutter"
+}
+
+### 23. Create Classroom - With Description Only
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Struktur Data",
+  "description": "Kelas untuk mempelajari struktur data dan algoritma"
+}
+
+### 24. Create Classroom - Without Description (Optional)
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Basis Data"
+}
+
+### 25. Create Classroom - Validation Error (Empty Name)
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "",
+  "description": "This should fail"
+}
+
+### 26. Create Classroom - Validation Error (Name Too Long)
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "This is a very long classroom name that exceeds the maximum allowed length of 255 characters and should fail validation because it is too long and will not be accepted by the system validation rules that are in place to ensure data integrity and proper formatting of classroom names in the database"
+}
+
+### 27. Create Classroom - Validation Error (Description Too Long)
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Test Classroom",
+  "description": "This description is way too long and exceeds the maximum allowed length of 1000 characters. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"
+}
+
+### 28. Create Classroom - Unauthenticated (Should Fail)
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+
+{
+  "name": "Unauthorized Classroom",
+  "description": "This should fail"
+}
+
+###############################################
+# Classroom Management - Get Classroom Detail
+###############################################
+
+### 29. Get Classroom Detail - Success (Owner)
+# Note: Replace {id} with actual classroom ID from create response
+@classroomId = {{createClassroom.response.body.data.id}}
+
+GET {{baseUrl}}/api/classrooms/{{classroomId}}
+Accept: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+### 30. Get Classroom Detail - Success (Member)
+# First, member needs to join the classroom (see join test below)
+GET {{baseUrl}}/api/classrooms/{{classroomId}}
+Accept: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+### 31. Get Classroom Detail - Non-Member (Should Fail)
+GET {{baseUrl}}/api/classrooms/{{classroomId}}
+Accept: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+### 32. Get Classroom Detail - Not Found (Should Fail)
+GET {{baseUrl}}/api/classrooms/99999
+Accept: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+### 33. Get Classroom Detail - Unauthenticated (Should Fail)
+GET {{baseUrl}}/api/classrooms/{{classroomId}}
+Accept: {{contentType}}
+
+###############################################
+# Classroom Management - Update Classroom
+###############################################
+
+### 34. Update Classroom - Success (Owner)
+PUT {{baseUrl}}/api/classrooms/{{classroomId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Pemrograman Web - Updated",
+  "description": "Updated description for pemrograman web class"
+}
+
+### 35. Update Classroom - Partial Update (Name Only)
+PUT {{baseUrl}}/api/classrooms/{{classroomId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Pemrograman Web - Final"
+}
+
+### 36. Update Classroom - Partial Update (Description Only)
+PUT {{baseUrl}}/api/classrooms/{{classroomId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "description": "Final description update"
+}
+
+### 37. Update Classroom - Member Cannot Update (Should Fail)
+PUT {{baseUrl}}/api/classrooms/{{classroomId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "name": "Unauthorized Update"
+}
+
+### 38. Update Classroom - Validation Error (Should Fail)
+PUT {{baseUrl}}/api/classrooms/{{classroomId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "",
+  "description": "Invalid update"
+}
+
+### 39. Update Classroom - Unauthenticated (Should Fail)
+PUT {{baseUrl}}/api/classrooms/{{classroomId}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Unauthorized"
+}
+
+###############################################
+# Classroom Management - Join Classroom
+###############################################
+
+### 40. Join Classroom - Success (Member)
+# Note: Get unique_code from classroom detail response
+# @name joinClassroom
+POST {{baseUrl}}/api/classrooms/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "unique_code": "ABCD1234"
+}
+
+### 41. Join Classroom - Validation Error (Invalid Code Length)
+POST {{baseUrl}}/api/classrooms/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "unique_code": "SHORT"
+}
+
+### 42. Join Classroom - Validation Error (Code Too Long)
+POST {{baseUrl}}/api/classrooms/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "unique_code": "TOOLONGCODE"
+}
+
+### 43. Join Classroom - Not Found (Invalid Code)
+POST {{baseUrl}}/api/classrooms/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "unique_code": "INVALID1"
+}
+
+### 44. Join Classroom - Already Member (Should Fail)
+POST {{baseUrl}}/api/classrooms/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "unique_code": "ABCD1234"
+}
+
+### 45. Join Classroom - Unauthenticated (Should Fail)
+POST {{baseUrl}}/api/classrooms/join
+Content-Type: {{contentType}}
+
+{
+  "unique_code": "ABCD1234"
+}
+
+###############################################
+# Classroom Management - Leave Classroom
+###############################################
+
+### 46. Leave Classroom - Success (Member)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/leave
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+### 47. Leave Classroom - Owner Cannot Leave (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/leave
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+### 48. Leave Classroom - Not a Member (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/leave
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+### 49. Leave Classroom - Unauthenticated (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/leave
+Content-Type: {{contentType}}
+
+###############################################
+# Classroom Management - Remove Member
+###############################################
+
+### 50. Remove Member - Success (Owner)
+# First, member needs to join again
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/remove-member
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "user_id": 2
+}
+
+### 51. Remove Member - Member Cannot Remove (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/remove-member
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "user_id": 3
+}
+
+### 52. Remove Member - Owner Cannot Remove Themselves (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/remove-member
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "user_id": 1
+}
+
+### 53. Remove Member - Validation Error (Invalid user_id)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/remove-member
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "user_id": "invalid"
+}
+
+### 54. Remove Member - Validation Error (Missing user_id)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/remove-member
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+}
+
+### 55. Remove Member - User Not Member (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/remove-member
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "user_id": 999
+}
+
+### 56. Remove Member - Unauthenticated (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/remove-member
+Content-Type: {{contentType}}
+
+{
+  "user_id": 2
+}
+
+###############################################
+# Classroom Management - Transfer Ownership
+###############################################
+
+### 57. Transfer Ownership - Success (Owner)
+# First, ensure member is in classroom
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/transfer-ownership
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "new_owner_id": 2
+}
+
+### 58. Transfer Ownership - Member Cannot Transfer (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/transfer-ownership
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "new_owner_id": 3
+}
+
+### 59. Transfer Ownership - New Owner Not Member (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/transfer-ownership
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "new_owner_id": 999
+}
+
+### 60. Transfer Ownership - Validation Error (Invalid new_owner_id)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/transfer-ownership
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "new_owner_id": "invalid"
+}
+
+### 61. Transfer Ownership - Validation Error (Missing new_owner_id)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/transfer-ownership
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+}
+
+### 62. Transfer Ownership - Unauthenticated (Should Fail)
+POST {{baseUrl}}/api/classrooms/{{classroomId}}/transfer-ownership
+Content-Type: {{contentType}}
+
+{
+  "new_owner_id": 2
+}
+
+###############################################
+# Classroom Management - Delete Classroom
+###############################################
+
+### 63. Delete Classroom - Success (Owner)
+# Create a new classroom for deletion test
+# @name createClassroomForDelete
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Classroom to Delete",
+  "description": "This classroom will be deleted"
+}
+
+@classroomToDeleteId = {{createClassroomForDelete.response.body.data.id}}
+
+DELETE {{baseUrl}}/api/classrooms/{{classroomToDeleteId}}
+Authorization: Bearer {{ownerToken}}
+
+### 64. Delete Classroom - Member Cannot Delete (Should Fail)
+DELETE {{baseUrl}}/api/classrooms/{{classroomId}}
+Authorization: Bearer {{memberToken}}
+
+### 65. Delete Classroom - Unauthenticated (Should Fail)
+DELETE {{baseUrl}}/api/classrooms/{{classroomId}}
+
+### 66. Delete Classroom - Not Found (Should Fail)
+DELETE {{baseUrl}}/api/classrooms/99999
+Authorization: Bearer {{ownerToken}}
+
+###############################################
+# Classroom Management - Complete Flow Test
+###############################################
+
+### 67. Complete Flow: Create → Join → View → Update → Leave → Delete
+# Step 1: Create Classroom
+# @name flowCreateClassroom
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Flow Test Classroom",
+  "description": "Testing complete flow"
+}
+
+@flowClassroomId = {{flowCreateClassroom.response.body.data.id}}
+@flowUniqueCode = {{flowCreateClassroom.response.body.data.unique_code}}
+
+### Step 2: Get Classroom Detail
+GET {{baseUrl}}/api/classrooms/{{flowClassroomId}}
+Accept: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+### Step 3: Member Joins Classroom
+POST {{baseUrl}}/api/classrooms/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+{
+  "unique_code": "{{flowUniqueCode}}"
+}
+
+### Step 4: Member Views Classroom
+GET {{baseUrl}}/api/classrooms/{{flowClassroomId}}
+Accept: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+### Step 5: Owner Updates Classroom
+PUT {{baseUrl}}/api/classrooms/{{flowClassroomId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+{
+  "name": "Flow Test Classroom - Updated",
+  "description": "Updated description"
+}
+
+### Step 6: Member Leaves Classroom
+POST {{baseUrl}}/api/classrooms/{{flowClassroomId}}/leave
+Content-Type: {{contentType}}
+Authorization: Bearer {{memberToken}}
+
+### Step 7: Owner Deletes Classroom
+DELETE {{baseUrl}}/api/classrooms/{{flowClassroomId}}
+Authorization: Bearer {{ownerToken}}
+
+### Step 8: Try to Access Deleted Classroom (Should Fail)
+GET {{baseUrl}}/api/classrooms/{{flowClassroomId}}
+Accept: {{contentType}}
+Authorization: Bearer {{ownerToken}}
+
+###############################################
+# Classroom Management - Expected Responses
+###############################################
+
+### Expected Success Responses:
+
+# List Classrooms (200):
+# {
+#   "success": true,
+#   "data": [
+#     {
+#       "id": 1,
+#       "owner_id": 1,
+#       "name": "Pemrograman Web",
+#       "description": "...",
+#       "unique_code": "ABCD1234",
+#       "owner": {"id": 1, "name": "...", "email": "..."},
+#       "users": [...],
+#       "users_count": 5
+#     }
+#   ]
+# }
+
+# Create Classroom (201):
+# {
+#   "success": true,
+#   "message": "Classroom created successfully",
+#   "data": {
+#     "id": 1,
+#     "owner_id": 1,
+#     "name": "Pemrograman Web",
+#     "description": "...",
+#     "unique_code": "ABCD1234",
+#     "owner": {...},
+#     "users": [...],
+#     "users_count": 1
+#   }
+# }
+
+# Get Classroom Detail (200):
+# {
+#   "success": true,
+#   "data": {
+#     "id": 1,
+#     "name": "...",
+#     "users": [
+#       {
+#         "id": 1,
+#         "name": "...",
+#         "email": "...",
+#         "is_coordinator": true,
+#         "coordinator_schedules": [...]
+#       }
+#     ],
+#     "class_schedules": [...]
+#   }
+# }
+
+# Join Classroom (200):
+# {
+#   "success": true,
+#   "message": "Successfully joined classroom",
+#   "data": {...}
+# }
+
+# Update Classroom (200):
+# {
+#   "success": true,
+#   "message": "Classroom updated successfully",
+#   "data": {...}
+# }
+
+# Delete Classroom (200):
+# {
+#   "success": true,
+#   "message": "Classroom deleted successfully"
+# }
+
+### Expected Error Responses:
+
+# Unauthorized (401):
+# {
+#   "message": "Unauthenticated."
+# }
+
+# Forbidden (403):
+# {
+#   "success": false,
+#   "message": "Only classroom owner can update"
+# }
+
+# Not Found (404):
+# {
+#   "success": false,
+#   "message": "Classroom not found"
+# }
+
+# Validation Error (422):
+# {
+#   "success": false,
+#   "message": "Validation error",
+#   "errors": {
+#     "name": ["The name field is required."]
+#   }
 # }

@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-// 1. Panggil Controller yang baru kita buat tadi
+use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\ClassScheduleController;
 use App\Http\Controllers\PersonalScheduleController; 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -40,13 +41,22 @@ Route::prefix('auth')->group(function () {
     Route::get('user', [AuthController::class, 'me']);
 });
 
-// --- PROTECTED ROUTES (Harus Login dulu baru bisa akses) ---
-// Kita pakai 'auth:api' karena proyek ini pakai JWT
+// Class Schedule Routes - Protected by JWT
+// RESTful API for nested resource: /classrooms/{classroom}/schedules
 Route::middleware('auth:api')->group(function () {
 
-    // INI BAGIAN TUGASMU:
-    // Mendaftarkan rute CRUD untuk Personal Schedule
-    // Otomatis membuat alamat: GET, POST, PUT, DELETE ke /personal-schedules
-    Route::apiResource('personal-schedules', PersonalScheduleController::class);
+    // Classroom Routes
+    Route::apiResource('classrooms', ClassroomController::class);
+    Route::post('classrooms/join', [ClassroomController::class, 'join']);
+    Route::post('classrooms/{classroom}/leave', [ClassroomController::class, 'leave']);
+    Route::post('classrooms/{classroom}/remove-member', [ClassroomController::class, 'removeMember']);
+    Route::post('classrooms/{classroom}/transfer-ownership', [ClassroomController::class, 'transferOwnership']);
 
+    // Nested resource routes for class schedules
+    Route::apiResource('classrooms.schedules', ClassScheduleController::class)->parameters([
+        'classrooms' => 'classroom',
+        'schedules' => 'schedule'
+    ]);
+    
+  Route::apiResource('personal-schedules', PersonalScheduleController::class);
 });
