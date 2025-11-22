@@ -38,6 +38,7 @@ Route::post('users', [AuthController::class, 'register']);
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::delete('login', [AuthController::class, 'logout']);
+    // Refresh endpoint - excluded from auth:api middleware so it can accept expired tokens
     Route::post('refresh', [AuthController::class, 'refresh']);
     Route::get('user', [AuthController::class, 'me']);
 });
