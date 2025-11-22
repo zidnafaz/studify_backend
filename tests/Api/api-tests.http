@@ -3,6 +3,7 @@
 ### Created: 2025-11-15
 
 @baseUrl = http://127.0.0.1:8000
+// @baseUrl = https://studify-backend-api-dev.onrender.com
 @contentType = application/json
 
 ###############################################
@@ -49,8 +50,8 @@ POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-  "email": "test@example.com",
-  "password": "password123"
+  "email": "alden83@example.com",
+  "password": "password"
 }
 
 ### 5. Login - Wrong Password (Should Fail)
@@ -884,4 +885,363 @@ Authorization: Bearer {{ownerToken}}
 #   "errors": {
 #     "name": ["The name field is required."]
 #   }
+# }
+
+###############################################
+# Combined Schedules - Authentication Setup
+###############################################
+
+### 68. Login for Combined Schedules Tests
+# @name schedulesLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "alden83@example.com",
+  "password": "password"
+}
+
+@schedulesToken = {{schedulesLogin.response.body.data.access_token}}
+
+###############################################
+# Combined Schedules - Get All Schedules
+###############################################
+
+### 69. Get All Combined Schedules (Personal + All Classrooms)
+GET {{baseUrl}}/api/schedules
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+### 70. Get All Combined Schedules - With Personal and Class Schedules
+# First, create some test data:
+# - Personal schedules
+# - Class schedules in multiple classrooms
+# Then call this endpoint to see combined result
+GET {{baseUrl}}/api/schedules
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+###############################################
+# Combined Schedules - Filter by Personal
+###############################################
+
+### 71. Get Personal Schedules Only
+GET {{baseUrl}}/api/schedules?source=personal
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+### 72. Get Personal Schedules Only - Empty Result
+# When user has no personal schedules
+GET {{baseUrl}}/api/schedules?source=personal
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+###############################################
+# Combined Schedules - Filter by Classroom
+###############################################
+
+### 73. Get Schedules from Specific Classroom
+# Note: Replace {classroomId} with actual classroom ID
+# @name getClassroomForSchedules
+GET {{baseUrl}}/api/classrooms
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+@classroomIdForSchedules = 1
+
+GET {{baseUrl}}/api/schedules?source=classroom:{{classroomIdForSchedules}}
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+### 74. Get Schedules from Specific Classroom - Multiple Schedules
+GET {{baseUrl}}/api/schedules?source=classroom:{{classroomIdForSchedules}}
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+### 75. Get Schedules from Specific Classroom - Empty Result
+# When classroom has no schedules
+GET {{baseUrl}}/api/schedules?source=classroom:{{classroomIdForSchedules}}
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+###############################################
+# Combined Schedules - Error Cases
+###############################################
+
+### 76. Get Schedules - Unauthenticated (Should Fail)
+GET {{baseUrl}}/api/schedules
+Accept: {{contentType}}
+
+### 77. Get Schedules from Non-Member Classroom (Should Fail)
+# Try to access schedules from classroom user is not a member of
+GET {{baseUrl}}/api/schedules?source=classroom:99999
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+### 78. Get Schedules - Invalid Classroom ID Format
+GET {{baseUrl}}/api/schedules?source=classroom:invalid
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+### 79. Get Schedules - Invalid Source Format
+# Should handle gracefully and return all schedules
+GET {{baseUrl}}/api/schedules?source=invalid_format
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+###############################################
+# Combined Schedules - Response Structure Tests
+###############################################
+
+### 80. Verify Response Structure - All Schedules
+GET {{baseUrl}}/api/schedules
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+# Expected Response Structure:
+# {
+#   "data": [
+#     {
+#       "id": 1,
+#       "type": "personal" | "class",
+#       "title": "...",
+#       "start_time": "...",
+#       "end_time": "...",
+#       "location": "...",
+#       "description": "...",
+#       "color": "#...",
+#       "source_id": null | classroom_id,
+#       "source_name": "Personal Schedule" | "Classroom Name",
+#       // For class schedules only:
+#       "lecturer": "...",
+#       "coordinator_1": user_id,
+#       "coordinator_2": user_id,
+#       "coordinator1": {...},
+#       "coordinator2": {...}
+#     }
+#   ],
+#   "meta": {
+#     "total": number,
+#     "available_sources": [
+#       {
+#         "id": "all" | "personal" | "classroom:{id}",
+#         "type": "all" | "personal" | "classroom",
+#         "name": "...",
+#         "description": "...",
+#         "classroom_id": number (for classroom type)
+#       }
+#     ],
+#     "current_filter": null | "personal" | "classroom:{id}"
+#   }
+# }
+
+### 81. Verify Response Structure - Personal Only
+GET {{baseUrl}}/api/schedules?source=personal
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+# All items in data should have:
+# - type: "personal"
+# - source_id: null
+# - source_name: "Personal Schedule"
+# - No lecturer, coordinator fields
+
+### 82. Verify Response Structure - Classroom Only
+GET {{baseUrl}}/api/schedules?source=classroom:{{classroomIdForSchedules}}
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+# All items in data should have:
+# - type: "class"
+# - source_id: classroom_id
+# - source_name: classroom name
+# - lecturer, coordinator fields present
+
+### 83. Verify Available Sources in Meta
+GET {{baseUrl}}/api/schedules
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+# meta.available_sources should include:
+# - "all" option
+# - "personal" option
+# - All classrooms user is member of
+
+###############################################
+# Combined Schedules - Sorting Tests
+###############################################
+
+### 84. Verify Schedules are Sorted by Start Time
+# Create schedules with different start times and verify order
+GET {{baseUrl}}/api/schedules
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+# Schedules should be ordered by start_time ascending
+
+###############################################
+# Combined Schedules - Complete Flow Test
+###############################################
+
+### 85. Complete Flow: Create Personal + Class Schedules → View Combined
+# Step 1: Create Personal Schedule
+# @name createPersonalSchedule
+POST {{baseUrl}}/api/personal-schedules
+Content-Type: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+{
+  "title": "Personal Study Session",
+  "start_time": "2025-11-20 10:00:00",
+  "end_time": "2025-11-20 12:00:00",
+  "location": "Library",
+  "description": "Study for exam",
+  "color": "#10B981"
+}
+
+### Step 2: Create Classroom (if not exists)
+# @name createClassroomForFlow
+POST {{baseUrl}}/api/classrooms
+Content-Type: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+{
+  "name": "Test Classroom for Schedules",
+  "description": "Testing combined schedules"
+}
+
+@flowClassroomId = {{createClassroomForFlow.response.body.data.id}}
+
+### Step 3: Create Class Schedule
+POST {{baseUrl}}/api/classrooms/{{flowClassroomId}}/schedules
+Content-Type: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+{
+  "title": "Class Lecture",
+  "start_time": "2025-11-20 14:00:00",
+  "end_time": "2025-11-20 16:00:00",
+  "location": "Room 301",
+  "lecturer": "Dr. Smith",
+  "description": "Weekly lecture",
+  "color": "#5CD9C1"
+}
+
+### Step 4: View All Combined Schedules
+GET {{baseUrl}}/api/schedules
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+# Should see both personal and class schedules
+
+### Step 5: Filter by Personal
+GET {{baseUrl}}/api/schedules?source=personal
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+# Should only see personal schedule
+
+### Step 6: Filter by Classroom
+GET {{baseUrl}}/api/schedules?source=classroom:{{flowClassroomId}}
+Accept: {{contentType}}
+Authorization: Bearer {{schedulesToken}}
+
+# Should only see class schedule
+
+###############################################
+# Combined Schedules - Expected Responses
+###############################################
+
+### Expected Success Responses:
+
+# Get All Schedules (200):
+# {
+#   "data": [
+#     {
+#       "id": 1,
+#       "type": "personal",
+#       "title": "Study Session",
+#       "start_time": "2025-11-20T10:00:00.000000Z",
+#       "end_time": "2025-11-20T12:00:00.000000Z",
+#       "location": "Library",
+#       "description": "Study for exam",
+#       "color": "#10B981",
+#       "source_id": null,
+#       "source_name": "Personal Schedule"
+#     },
+#     {
+#       "id": 1,
+#       "type": "class",
+#       "title": "Class Lecture",
+#       "start_time": "2025-11-20T14:00:00.000000Z",
+#       "end_time": "2025-11-20T16:00:00.000000Z",
+#       "location": "Room 301",
+#       "lecturer": "Dr. Smith",
+#       "description": "Weekly lecture",
+#       "color": "#5CD9C1",
+#       "coordinator_1": 1,
+#       "coordinator_2": 1,
+#       "coordinator1": {"id": 1, "name": "...", "email": "..."},
+#       "coordinator2": {"id": 1, "name": "...", "email": "..."},
+#       "source_id": 1,
+#       "source_name": "Test Classroom"
+#     }
+#   ],
+#   "meta": {
+#     "total": 2,
+#     "available_sources": [
+#       {
+#         "id": "all",
+#         "type": "all",
+#         "name": "All Schedules",
+#         "description": "Semua jadwal (personal + semua classroom)"
+#       },
+#       {
+#         "id": "personal",
+#         "type": "personal",
+#         "name": "Personal Schedule",
+#         "description": "Jadwal pribadi"
+#       },
+#       {
+#         "id": "classroom:1",
+#         "type": "classroom",
+#         "name": "Test Classroom",
+#         "description": "Jadwal dari classroom: Test Classroom",
+#         "classroom_id": 1
+#       }
+#     ],
+#     "current_filter": null
+#   }
+# }
+
+# Filter by Personal (200):
+# {
+#   "data": [...], // Only personal schedules
+#   "meta": {
+#     "total": 1,
+#     "available_sources": [...],
+#     "current_filter": "personal"
+#   }
+# }
+
+# Filter by Classroom (200):
+# {
+#   "data": [...], // Only schedules from specified classroom
+#   "meta": {
+#     "total": 1,
+#     "available_sources": [...],
+#     "current_filter": "classroom:1"
+#   }
+# }
+
+### Expected Error Responses:
+
+# Unauthenticated (401):
+# {
+#   "message": "Unauthenticated."
+# }
+
+# Classroom Not Found or No Access (404):
+# {
+#   "message": "Classroom not found or you do not have access"
 # }

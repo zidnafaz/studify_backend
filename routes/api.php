@@ -60,4 +60,7 @@ Route::middleware('auth:api')->group(function () {
     ]);
 
     Route::apiResource('personal-schedules', PersonalScheduleController::class);
+
+    // Combined Schedules Route - Menggabungkan personal dan class schedules
+    Route::get('schedules', [CombinedScheduleController::class, 'index']);
 });
