@@ -41,6 +41,7 @@ Route::prefix('auth')->group(function () {
     // Refresh endpoint - excluded from auth:api middleware so it can accept expired tokens
     Route::post('refresh', [AuthController::class, 'refresh']);
     Route::get('user', [AuthController::class, 'me']);
+    Route::post('profile', [AuthController::class, 'updateProfile']);
 });
 
 // --- Protected Routes (Hanya bisa diakses jika sudah login) ---
