@@ -128,6 +128,8 @@ class AuthController extends Controller
         try {
             // Auth::refresh() can accept expired tokens if they're within refresh_ttl
             $token = Auth::refresh();
+            // Set the new token to the guard so Auth::user() can retrieve the user
+            Auth::setToken($token);
             return $this->respondWithToken($token);
         } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
             // Token is beyond refresh_ttl window

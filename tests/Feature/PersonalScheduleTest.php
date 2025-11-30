@@ -174,5 +174,48 @@ class PersonalScheduleTest extends TestCase
             'id' => $schedule->id,
         ]);
     }
+    public function test_user_can_create_repeating_personal_schedule_with_reminders(): void
+    {
+        $payload = [
+            'title' => 'Repeating Schedule',
+            'start_time' => now()->addDay()->toDateTimeString(),
+            'end_time' => now()->addDay()->addHour()->toDateTimeString(),
+            'location' => 'Room A',
+            'description' => 'Weekly meeting',
+            'color' => '#10B981',
+            'repeat_days' => [now()->addDay()->dayOfWeekIso], // Repeat on the same day next week
+            'repeat_count' => 3, // Create for 3 weeks
+            'reminders' => [15],
+        ];
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->postJson('/api/personal-schedules', $payload);
+
+        $response->assertCreated();
+
+        // Check if main schedule created
+        $this->assertDatabaseHas('personal_schedules', [
+            'title' => 'Repeating Schedule',
+            'user_id' => $this->user->id,
+        ]);
+
+        // Check if repeated schedules created (original + 3 weeks = 4 schedules total)
+        $count = PersonalSchedule::where('title', 'Repeating Schedule')
+            ->where('user_id', $this->user->id)
+            ->count();
+
+        $this->assertGreaterThanOrEqual(2, $count);
+
+        // Check if reminders created
+        $schedule = PersonalSchedule::where('title', 'Repeating Schedule')
+            ->where('user_id', $this->user->id)
+            ->first();
+
+        $this->assertDatabaseHas('reminders', [
+            'remindable_id' => $schedule->id,
+            'remindable_type' => PersonalSchedule::class,
+            'minutes_before_start' => 15,
+        ]);
+    }
 }
 

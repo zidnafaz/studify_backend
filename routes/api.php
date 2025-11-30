@@ -64,4 +64,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Combined Schedules Route - Menggabungkan personal dan class schedules
     Route::get('schedules', [CombinedScheduleController::class, 'index']);
+
+    // Reminder Routes
+    Route::apiResource('reminders', \App\Http\Controllers\ReminderController::class);
 });

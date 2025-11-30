@@ -79,10 +79,11 @@ class ClassroomController extends Controller
     public function show($id)
     {
         $classroom = Classroom::with([
-                'owner:id,name,email',
-                'users:id,name,email',
-                'classSchedules:id,classroom_id,coordinator_1,coordinator_2,title,start_time,end_time,color'
-            ])
+            'owner:id,name,email',
+            'users:id,name,email',
+            'classSchedules:id,classroom_id,coordinator_1,coordinator_2,title,start_time,end_time,color',
+            'classSchedules.reminders'
+        ])
             ->withCount('users')
             ->find($id);
 
@@ -332,7 +333,7 @@ class ClassroomController extends Controller
         ClassSchedule::where('classroom_id', $id)
             ->where(function ($query) use ($userId) {
                 $query->where('coordinator_1', $userId)
-                      ->orWhere('coordinator_2', $userId);
+                    ->orWhere('coordinator_2', $userId);
             })
             ->get()
             ->each(function ($schedule) use ($userId, $classroom) {

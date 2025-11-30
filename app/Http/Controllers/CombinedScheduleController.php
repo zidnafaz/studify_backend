@@ -30,6 +30,7 @@ class CombinedScheduleController extends Controller
         // Jika source adalah 'personal' atau tidak ada filter, ambil personal schedules
         if (!$source || $source === 'personal') {
             $personalSchedules = PersonalSchedule::where('user_id', $user->id)
+                ->with('reminders')
                 ->orderBy('start_time', 'asc')
                 ->get()
                 ->map(function ($schedule) {
@@ -42,11 +43,12 @@ class CombinedScheduleController extends Controller
                         'location' => $schedule->location,
                         'description' => $schedule->description,
                         'color' => $schedule->color,
+                        'reminders' => $schedule->reminders,
                         'source_id' => null,
                         'source_name' => 'Personal Schedule',
                     ];
                 });
-            
+
             $schedules = $schedules->merge($personalSchedules);
         }
 
@@ -63,7 +65,7 @@ class CombinedScheduleController extends Controller
             if ($source && strpos($source, 'classroom:') === 0) {
                 $classroomId = (int) str_replace('classroom:', '', $source);
                 $classrooms = $classrooms->where('id', $classroomId);
-                
+
                 // Check if user has access to this classroom
                 if ($classrooms->isEmpty()) {
                     return response()->json([
@@ -75,7 +77,7 @@ class CombinedScheduleController extends Controller
             // Get all class schedules from accessible classrooms
             foreach ($classrooms as $classroom) {
                 $classSchedules = ClassSchedule::where('classroom_id', $classroom->id)
-                    ->with(['coordinator1:id,name,email', 'coordinator2:id,name,email'])
+                    ->with(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders'])
                     ->orderBy('start_time', 'asc')
                     ->get()
                     ->map(function ($schedule) use ($classroom) {
@@ -93,11 +95,12 @@ class CombinedScheduleController extends Controller
                             'coordinator_2' => $schedule->coordinator_2,
                             'coordinator1' => $schedule->coordinator1,
                             'coordinator2' => $schedule->coordinator2,
+                            'reminders' => $schedule->reminders,
                             'source_id' => $classroom->id,
                             'source_name' => $classroom->name,
                         ];
                     });
-                
+
                 $schedules = $schedules->merge($classSchedules);
             }
         }

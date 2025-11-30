@@ -37,7 +37,7 @@ class ClassScheduleController extends BaseController
         $this->authorize('view', [ClassSchedule::class, $classroom]);
 
         $schedules = ClassSchedule::where('classroom_id', $classroomId)
-            ->with(['coordinator1:id,name,email', 'coordinator2:id,name,email'])
+            ->with(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders'])
             ->orderBy('start_time', 'asc')
             ->get();
 
@@ -73,6 +73,8 @@ class ClassScheduleController extends BaseController
             'repeat_days' => 'nullable|array',
             'repeat_days.*' => 'integer|min:1|max:7',
             'repeat_count' => 'nullable|integer|min:1|max:52',
+            'reminders' => 'nullable|array',
+            'reminders.*' => 'integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -103,21 +105,40 @@ class ClassScheduleController extends BaseController
         }
 
         // Create single schedule
-        $schedule = ClassSchedule::create([
-            'classroom_id' => $classroomId,
-            'coordinator_1' => $request->coordinator_1 ?? $classroom->owner_id,
-            'coordinator_2' => $request->coordinator_2 ?? $classroom->owner_id,
-            'title' => $request->title,
-            'start_time' => $request->start_time,
-            'end_time' => $request->end_time,
-            'location' => $request->location,
-            'lecturer' => $request->lecturer,
-            'description' => $request->description,
-            'color' => $request->color ?? '#5CD9C1',
-        ]);
+        $schedule = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $classroomId, $classroom) {
+            $schedule = ClassSchedule::create([
+                'classroom_id' => $classroomId,
+                'coordinator_1' => $request->coordinator_1 ?? $classroom->owner_id,
+                'coordinator_2' => $request->coordinator_2 ?? $classroom->owner_id,
+                'title' => $request->title,
+                'start_time' => $request->start_time,
+                'end_time' => $request->end_time,
+                'location' => $request->location,
+                'lecturer' => $request->lecturer,
+                'description' => $request->description,
+                'color' => $request->color ?? '#5CD9C1',
+            ]);
+
+            // Create reminders if requested
+            $reminders = $request->input('reminders');
+            if (is_array($reminders)) {
+                foreach ($reminders as $minutes) {
+                    if ($minutes > 0) {
+                        \App\Models\Reminder::create([
+                            'remindable_id' => $schedule->id,
+                            'remindable_type' => ClassSchedule::class,
+                            'minutes_before_start' => $minutes,
+                            'status' => 'pending',
+                        ]);
+                    }
+                }
+            }
+
+            return $schedule;
+        });
 
         // Load relationships
-        $schedule->load(['coordinator1:id,name,email', 'coordinator2:id,name,email']);
+        $schedule->load(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders']);
 
         return response()->json([
             'message' => 'Jadwal kelas berhasil dibuat',
@@ -185,12 +206,12 @@ class ClassScheduleController extends BaseController
 
         // Prepare update data
         $updateData = $request->all();
-        
+
         // If coordinator_1 is null, set to owner_id
         if (!isset($updateData['coordinator_1']) || $updateData['coordinator_1'] === null) {
             $updateData['coordinator_1'] = $classroom->owner_id;
         }
-        
+
         // If coordinator_2 is null, set to owner_id
         if (!isset($updateData['coordinator_2']) || $updateData['coordinator_2'] === null) {
             $updateData['coordinator_2'] = $classroom->owner_id;
@@ -198,8 +219,29 @@ class ClassScheduleController extends BaseController
 
         $schedule->update($updateData);
 
+        // Update reminders if provided
+        if ($request->has('reminders')) {
+            // Delete existing reminders
+            $schedule->reminders()->delete();
+
+            // Create new reminders
+            $reminders = $request->input('reminders');
+            if (is_array($reminders)) {
+                foreach ($reminders as $minutes) {
+                    if ($minutes > 0) {
+                        \App\Models\Reminder::create([
+                            'remindable_id' => $schedule->id,
+                            'remindable_type' => ClassSchedule::class,
+                            'minutes_before_start' => $minutes,
+                            'status' => 'pending',
+                        ]);
+                    }
+                }
+            }
+        }
+
         // Load relationships
-        $schedule->load(['coordinator1:id,name,email', 'coordinator2:id,name,email']);
+        $schedule->load(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders']);
 
         return response()->json([
             'message' => 'Jadwal kelas berhasil diperbarui',
@@ -243,57 +285,65 @@ class ClassScheduleController extends BaseController
     {
         $startTime = Carbon::parse($request->start_time);
         $endTime = Carbon::parse($request->end_time);
-        $schedulesToInsert = [];
-        $currentDate = $startTime->copy();
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($classroom, $request, $repeatDays, $repeatCount, $startTime, $endTime) {
+            $schedulesToInsert = [];
+            $currentDate = $startTime->copy();
 
-        // Loop through repeat count
-        for ($week = 0; $week < $repeatCount; $week++) {
-            // For each selected day in the week
-            foreach ($repeatDays as $dayOfWeek) {
-                // Calculate the date for this day in this week
-                $scheduleDate = $currentDate->copy()->startOfWeek()->addDays($dayOfWeek - 1);
+            // Loop through repeat count
+            for ($week = 0; $week < $repeatCount; $week++) {
+                // For each selected day in the week
+                foreach ($repeatDays as $dayOfWeek) {
+                    // Calculate the date for this day in this week
+                    $scheduleDate = $currentDate->copy()->startOfWeek()->addDays($dayOfWeek - 1);
 
-                // Skip if the date is in the past
-                if ($scheduleDate->isPast() && !$scheduleDate->isToday()) {
-                    continue;
+                    // Skip if the date is in the past
+                    if ($scheduleDate->isPast() && !$scheduleDate->isToday()) {
+                        continue;
+                    }
+
+                    // Create start and end datetime for this schedule
+                    $scheduleStart = $scheduleDate->copy()
+                        ->setTime($startTime->hour, $startTime->minute, $startTime->second);
+                    $scheduleEnd = $scheduleDate->copy()
+                        ->setTime($endTime->hour, $endTime->minute, $endTime->second);
+
+                    $schedule = ClassSchedule::create([
+                        'classroom_id' => $classroom->id,
+                        'coordinator_1' => $request->coordinator_1 ?? $classroom->owner_id,
+                        'coordinator_2' => $request->coordinator_2 ?? $classroom->owner_id,
+                        'title' => $request->title,
+                        'start_time' => $scheduleStart->toDateTimeString(),
+                        'end_time' => $scheduleEnd->toDateTimeString(),
+                        'location' => $request->location,
+                        'lecturer' => $request->lecturer,
+                        'description' => $request->description,
+                        'color' => $request->color ?? '#5CD9C1',
+                    ]);
+
+                    // Create reminders if requested
+                    $reminders = $request->input('reminders');
+                    if (is_array($reminders)) {
+                        foreach ($reminders as $minutes) {
+                            if ($minutes > 0) {
+                                \App\Models\Reminder::create([
+                                    'remindable_id' => $schedule->id,
+                                    'remindable_type' => ClassSchedule::class,
+                                    'minutes_before_start' => $minutes,
+                                    'status' => 'pending',
+                                ]);
+                            }
+                        }
+                    }
+
+                    $schedule->load('reminders');
+                    $schedulesToInsert[] = $schedule;
                 }
 
-                // Create start and end datetime for this schedule
-                $scheduleStart = $scheduleDate->copy()
-                    ->setTime($startTime->hour, $startTime->minute, $startTime->second);
-                $scheduleEnd = $scheduleDate->copy()
-                    ->setTime($endTime->hour, $endTime->minute, $endTime->second);
-
-                $schedulesToInsert[] = [
-                    'classroom_id' => $classroom->id,
-                    'coordinator_1' => $request->coordinator_1 ?? $classroom->owner_id,
-                    'coordinator_2' => $request->coordinator_2 ?? $classroom->owner_id,
-                    'title' => $request->title,
-                    'start_time' => $scheduleStart->toDateTimeString(),
-                    'end_time' => $scheduleEnd->toDateTimeString(),
-                    'location' => $request->location,
-                    'lecturer' => $request->lecturer,
-                    'description' => $request->description,
-                    'color' => $request->color ?? '#5CD9C1',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+                // Move to next week
+                $currentDate->addWeek();
             }
 
-            // Move to next week
-            $currentDate->addWeek();
-        }
-
-        // Insert all schedules at once (bulk insert for performance)
-        ClassSchedule::insert($schedulesToInsert);
-
-        // Fetch the created schedules with relationships
-        $createdSchedules = ClassSchedule::where('classroom_id', $classroom->id)
-            ->where('created_at', '>=', now()->subSeconds(5))
-            ->with(['coordinator1:id,name,email', 'coordinator2:id,name,email'])
-            ->get();
-
-        return $createdSchedules;
+            return $schedulesToInsert;
+        });
     }
 }
-
