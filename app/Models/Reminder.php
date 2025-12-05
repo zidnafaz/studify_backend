@@ -19,6 +19,7 @@ class Reminder extends Model
     ];
 
     protected $casts = [
+        'remindable_id' => 'integer',
         'minutes_before_start' => 'integer',
     ];
 

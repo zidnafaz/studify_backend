@@ -471,5 +471,70 @@ class CombinedScheduleTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('meta.total', 7);
     }
+    /**
+     * Test: User can filter schedules by date range
+     */
+    public function test_user_can_filter_schedules_by_date_range(): void
+    {
+        // Create schedules inside range
+        PersonalSchedule::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'Inside Range',
+            'start_time' => '2025-11-20 10:00:00',
+            'end_time' => '2025-11-20 11:00:00',
+        ]);
+
+        // Create schedules outside range (before)
+        PersonalSchedule::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'Before Range',
+            'start_time' => '2025-11-19 10:00:00',
+            'end_time' => '2025-11-19 11:00:00',
+        ]);
+
+        // Create schedules outside range (after)
+        PersonalSchedule::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'After Range',
+            'start_time' => '2025-11-21 10:00:00',
+            'end_time' => '2025-11-21 11:00:00',
+        ]);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->getJson('/api/schedules?start_date=2025-11-20&end_date=2025-11-20');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data');
+
+        $this->assertEquals('Inside Range', $response->json('data.0.title'));
+    }
+
+    /**
+     * Test: User can filter schedules from date onwards
+     */
+    public function test_user_can_filter_schedules_from_date_onwards(): void
+    {
+        // Create past schedule
+        PersonalSchedule::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'Past',
+            'start_time' => '2025-11-19 10:00:00',
+        ]);
+
+        // Create future schedule
+        PersonalSchedule::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'Future',
+            'start_time' => '2025-11-21 10:00:00',
+        ]);
+
+        $response = $this->withHeaders($this->authHeaders())
+            ->getJson('/api/schedules?start_date=2025-11-20');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data');
+
+        $this->assertEquals('Future', $response->json('data.0.title'));
+    }
 }
 

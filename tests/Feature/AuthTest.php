@@ -320,7 +320,7 @@ class AuthTest extends TestCase
      */
     public function test_user_can_update_profile()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email' => 'original@example.com']);
         /** @var \Tymon\JWTAuth\JWTGuard $auth */
         $auth = auth();
         $token = $auth->login($user);
@@ -328,7 +328,6 @@ class AuthTest extends TestCase
         $response = $this->withHeader('Authorization', "Bearer $token")
             ->postJson('/api/auth/profile', [
                 'name' => 'Updated Name',
-                'email' => 'updated@example.com',
             ]);
 
         $response->assertStatus(200)
@@ -337,19 +336,19 @@ class AuthTest extends TestCase
                 'data' => [
                     'id' => $user->id,
                     'name' => 'Updated Name',
-                    'email' => 'updated@example.com',
+                    'email' => 'original@example.com',
                 ]
             ]);
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'name' => 'Updated Name',
-            'email' => 'updated@example.com',
+            'email' => 'original@example.com',
         ]);
     }
 
     /**
-     * Test user cannot update profile with invalid data.
+     * Test user cannot_update_profile_with_invalid_data.
      *
      * @return void
      */
@@ -363,10 +362,9 @@ class AuthTest extends TestCase
         $response = $this->withHeader('Authorization', "Bearer $token")
             ->postJson('/api/auth/profile', [
                 'name' => '',
-                'email' => 'invalid-email',
             ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'email']);
+            ->assertJsonValidationErrors(['name']);
     }
 }

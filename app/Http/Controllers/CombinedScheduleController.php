@@ -27,12 +27,23 @@ class CombinedScheduleController extends Controller
 
         $schedules = collect();
 
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
         // Jika source adalah 'personal' atau tidak ada filter, ambil personal schedules
         if (!$source || $source === 'personal') {
-            $personalSchedules = PersonalSchedule::where('user_id', $user->id)
+            $query = PersonalSchedule::where('user_id', $user->id)
                 ->with('reminders')
-                ->orderBy('start_time', 'asc')
-                ->get()
+                ->orderBy('start_time', 'asc');
+
+            if ($startDate) {
+                $query->whereDate('start_time', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->whereDate('end_time', '<=', $endDate);
+            }
+
+            $personalSchedules = $query->get()
                 ->map(function ($schedule) {
                     return [
                         'id' => $schedule->id,
@@ -76,13 +87,21 @@ class CombinedScheduleController extends Controller
 
             // Get all class schedules from accessible classrooms
             foreach ($classrooms as $classroom) {
-                $classSchedules = ClassSchedule::where('classroom_id', $classroom->id)
+                $query = ClassSchedule::where('classroom_id', $classroom->id)
                     ->with(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders'])
-                    ->orderBy('start_time', 'asc')
-                    ->get()
+                    ->orderBy('start_time', 'asc');
+
+                if ($startDate) {
+                    $query->whereDate('start_time', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $query->whereDate('end_time', '<=', $endDate);
+                }
+
+                $classSchedules = $query->get()
                     ->map(function ($schedule) use ($classroom) {
                         return [
-                            'id' => $schedule->id,
+                            'id' => (int) $schedule->id,
                             'type' => 'class',
                             'title' => $schedule->title,
                             'start_time' => $schedule->start_time,
@@ -91,12 +110,12 @@ class CombinedScheduleController extends Controller
                             'lecturer' => $schedule->lecturer,
                             'description' => $schedule->description,
                             'color' => $schedule->color,
-                            'coordinator_1' => $schedule->coordinator_1,
-                            'coordinator_2' => $schedule->coordinator_2,
+                            'coordinator_1' => (int) $schedule->coordinator_1,
+                            'coordinator_2' => (int) $schedule->coordinator_2,
                             'coordinator1' => $schedule->coordinator1,
                             'coordinator2' => $schedule->coordinator2,
                             'reminders' => $schedule->reminders,
-                            'source_id' => $classroom->id,
+                            'source_id' => (int) $classroom->id,
                             'source_name' => $classroom->name,
                         ];
                     });
