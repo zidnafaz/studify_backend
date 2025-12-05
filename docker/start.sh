@@ -3,12 +3,18 @@
 # Ensure storage directory exists
 mkdir -p /var/www/html/storage/app
 
-# Write Firebase credentials to file if env var exists
-if [ ! -z "$FIREBASE_CREDENTIALS_JSON" ]; then
-    echo "Writing Firebase credentials to file..."
-    # Extract filename from FIREBASE_CREDENTIALS path or default to firebase.json
-    TARGET_FILE="${FIREBASE_CREDENTIALS:-/var/www/html/storage/app/firebase.json}"
-    echo "$FIREBASE_CREDENTIALS_JSON" > "$TARGET_FILE"
+# Handle Firebase Credentials
+# If FIREBASE_CREDENTIALS starts with '{', it's JSON content, not a path.
+# We need to write it to a file and update the env var to point to that file.
+if echo "$FIREBASE_CREDENTIALS" | grep -q '^{'; then
+    echo "Detected JSON content in FIREBASE_CREDENTIALS. Writing to file..."
+    echo "$FIREBASE_CREDENTIALS" > /var/www/html/storage/app/firebase.json
+    export FIREBASE_CREDENTIALS=/var/www/html/storage/app/firebase.json
+elif [ ! -z "$FIREBASE_CREDENTIALS_JSON" ]; then
+    # Fallback: If FIREBASE_CREDENTIALS_JSON is set, use that
+    echo "Writing FIREBASE_CREDENTIALS_JSON to file..."
+    echo "$FIREBASE_CREDENTIALS_JSON" > /var/www/html/storage/app/firebase.json
+    export FIREBASE_CREDENTIALS=/var/www/html/storage/app/firebase.json
 fi
 
 # Clear caches to ensure fresh config
