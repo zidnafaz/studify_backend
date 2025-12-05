@@ -47,7 +47,7 @@ RUN chmod +x /usr/local/bin/start.sh
 
 # Install PHP dependencies
 ENV FIREBASE_PROJECT_ID=build_dummy
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Install Node dependencies and build assets
 RUN npm install && npm run build
