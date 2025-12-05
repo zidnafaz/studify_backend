@@ -2,8 +2,9 @@
 ### Base URL: https://studify-backend-api-dev.onrender.com
 ### Created: 2025-11-15
 
-@baseUrl = http://127.0.0.1:8000
+// @baseUrl = http://127.0.0.1:8000
 // @baseUrl = https://studify-backend-api-dev.onrender.com
+@baseUrl = https://zidnafaz.site
 @contentType = application/json
 
 ###############################################
