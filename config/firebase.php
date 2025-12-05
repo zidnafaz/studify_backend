@@ -51,8 +51,9 @@ return [
              */
 
             'credentials' => env('FIREBASE_CREDENTIALS') && is_array($decoded = json_decode(env('FIREBASE_CREDENTIALS'), true))
-                ? $decoded
-                : env('FIREBASE_CREDENTIALS'),
+    ? $decoded
+    : env('FIREBASE_CREDENTIALS'),
+
 
             /*
              * ------------------------------------------------------------------------
