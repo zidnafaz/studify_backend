@@ -34,6 +34,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy application files
 COPY . .
 
+# Create .env file
+RUN cp .env.example .env && \
+    echo "FIREBASE_PROJECT_ID=build_dummy" >> .env
+
 # Copy nginx configuration
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/default.conf /etc/nginx/conf.d/default.conf
@@ -44,10 +48,6 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # Copy startup script
 COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
-
-# Create .env file
-RUN cp .env.example .env && \
-    echo "FIREBASE_PROJECT_ID=build_dummy" >> .env
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
