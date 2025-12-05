@@ -45,6 +45,10 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
+# Create .env file
+RUN cp .env.example .env && \
+    echo "FIREBASE_PROJECT_ID=build_dummy" >> .env
+
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
