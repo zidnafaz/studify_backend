@@ -46,6 +46,7 @@ COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
 # Install PHP dependencies
+ENV FIREBASE_PROJECT_ID=build_dummy
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Install Node dependencies and build assets
