@@ -1,22 +1,21 @@
-# Use official PHP 8.2 FPM Alpine image
-FROM php:8.2-fpm-alpine
+# Use official PHP 8.2 FPM image (Debian based)
+FROM php:8.2-fpm
 
 # Set working directory
 WORKDIR /var/www/html
 
 # Install system dependencies
-# Install system dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     git \
     curl \
     zip \
     unzip \
-    mysql-client \
+    mariadb-client \
     nginx \
     supervisor \
     nodejs \
     npm \
-    bash
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
@@ -37,7 +36,7 @@ COPY . .
 
 # Copy nginx configuration
 COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/default.conf /etc/nginx/http.d/default.conf
+COPY docker/default.conf /etc/nginx/conf.d/default.conf
 
 # Copy supervisor configuration
 COPY docker/supervisord.conf /etc/supervisord.conf
