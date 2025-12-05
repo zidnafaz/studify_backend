@@ -5,6 +5,3 @@
 composer install --no-dev --optimize-autoloader --no-interaction
 npm install
 npm run build
-
-# Build assets
-npm run build
