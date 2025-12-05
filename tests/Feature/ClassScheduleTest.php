@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\Classroom;
 use App\Models\ClassSchedule;
+use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Mockery\MockInterface;
 
 class ClassScheduleTest extends TestCase
 {
@@ -19,6 +21,7 @@ class ClassScheduleTest extends TestCase
     protected $nonMember;
     protected $classroom;
     protected $token;
+    protected $notificationServiceMock;
 
     /**
      * Setup test environment
@@ -26,6 +29,17 @@ class ClassScheduleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Mock Messaging to prevent Firebase connection attempts
+        $this->mock(\Kreait\Firebase\Contract\Messaging::class, function (MockInterface $mock) {
+            //
+        });
+
+        // Mock NotificationService
+        $this->notificationServiceMock = $this->mock(NotificationService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('sendToUsers')->byDefault();
+            $mock->shouldReceive('sendToUser')->byDefault();
+        });
 
         // Create users
         $this->owner = User::factory()->create();
@@ -47,6 +61,30 @@ class ClassScheduleTest extends TestCase
         // Generate JWT token for owner
         $this->token = JWTAuth::fromUser($this->owner);
     }
+    /**
+     * Test: Notification is sent on schedule update
+     */
+    public function test_notification_is_sent_on_schedule_update()
+    {
+        $schedule = ClassSchedule::factory()->create([
+            'classroom_id' => $this->classroom->id,
+            'title' => 'Old Title',
+        ]);
+
+        $updateData = [
+            'title' => 'Updated Title',
+        ];
+
+        // Expect notification to be sent
+        $this->notificationServiceMock->shouldReceive('sendToUsers')->once();
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->putJson("/api/classrooms/{$this->classroom->id}/schedules/{$schedule->id}", $updateData);
+
+        $response->assertStatus(200);
+    }
+
 
     /**
      * Test: Member can list class schedules
@@ -181,10 +219,10 @@ class ClassScheduleTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
         ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", [
-            'title' => '',
-            'start_time' => 'invalid-date',
-            'end_time' => '2025-11-20 10:00:00',
-        ]);
+                    'title' => '',
+                    'start_time' => 'invalid-date',
+                    'end_time' => '2025-11-20 10:00:00',
+                ]);
 
         $response->assertStatus(422)
             ->assertJsonStructure([
@@ -201,10 +239,10 @@ class ClassScheduleTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
         ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", [
-            'title' => 'Test Schedule',
-            'start_time' => '2025-11-20 10:00:00',
-            'end_time' => '2025-11-20 08:00:00', // Earlier than start
-        ]);
+                    'title' => 'Test Schedule',
+                    'start_time' => '2025-11-20 10:00:00',
+                    'end_time' => '2025-11-20 08:00:00', // Earlier than start
+                ]);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['end_time']);
@@ -474,11 +512,11 @@ class ClassScheduleTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
         ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", [
-            'title' => 'Test Schedule',
-            'start_time' => '2025-11-20 08:00:00',
-            'end_time' => '2025-11-20 10:00:00',
-            'color' => '#FF5733',
-        ]);
+                    'title' => 'Test Schedule',
+                    'start_time' => '2025-11-20 08:00:00',
+                    'end_time' => '2025-11-20 10:00:00',
+                    'color' => '#FF5733',
+                ]);
 
         $response->assertStatus(201);
     }
@@ -491,11 +529,11 @@ class ClassScheduleTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
         ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", [
-            'title' => 'Test Schedule',
-            'start_time' => '2025-11-20 08:00:00',
-            'end_time' => '2025-11-20 10:00:00',
-            'color' => 'invalid-color',
-        ]);
+                    'title' => 'Test Schedule',
+                    'start_time' => '2025-11-20 08:00:00',
+                    'end_time' => '2025-11-20 10:00:00',
+                    'color' => 'invalid-color',
+                ]);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['color']);
@@ -509,10 +547,10 @@ class ClassScheduleTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
         ])->postJson("/api/classrooms/{$this->classroom->id}/schedules", [
-            'title' => 'Test Schedule',
-            'start_time' => '2025-11-20 08:00:00',
-            'end_time' => '2025-11-20 10:00:00',
-        ]);
+                    'title' => 'Test Schedule',
+                    'start_time' => '2025-11-20 08:00:00',
+                    'end_time' => '2025-11-20 10:00:00',
+                ]);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -803,4 +841,3 @@ class ClassScheduleTest extends TestCase
         }
     }
 }
-

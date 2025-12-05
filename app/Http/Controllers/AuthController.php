@@ -19,7 +19,8 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login', 'register']]);
+        // Exclude refresh from auth:api middleware so it can accept expired tokens
+        $this->middleware('auth:api', ['except' => ['login', 'register', 'refresh']]);
     }
 
     /**
@@ -49,7 +50,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $token = Auth::login($user);
+        $token = Auth::guard('api')->login($user);
 
         return response()->json([
             'data' => [
@@ -118,12 +119,28 @@ class AuthController extends Controller
 
     /**
      * Refresh a token.
+     * This endpoint accepts expired tokens as long as they're within refresh_ttl window.
      *
      * @return \Illuminate\Http\JsonResponse
      */
     public function refresh()
     {
-        return $this->respondWithToken(Auth::refresh());
+        try {
+            // Auth::refresh() can accept expired tokens if they're within refresh_ttl
+            $token = Auth::refresh();
+            // Set the new token to the guard so Auth::user() can retrieve the user
+            Auth::setToken($token);
+            return $this->respondWithToken($token);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            // Token is beyond refresh_ttl window
+            return response()->json([
+                'message' => 'Token has expired and cannot be refreshed. Please login again.',
+            ], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json([
+                'message' => 'Could not refresh token',
+            ], 401);
+        }
     }
 
     /**
@@ -142,6 +159,36 @@ class AuthController extends Controller
                 'token_type' => 'bearer',
                 'expires_in' => Auth::factory()->getTTL() * 60,
             ]
+        ]);
+    }
+    /**
+     * Update the authenticated User's profile.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation errors',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user->update([
+            'name' => $request->name,
+        ]);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'data' => $user,
         ]);
     }
 }

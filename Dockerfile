@@ -1,27 +1,26 @@
-# Use official PHP 8.2 FPM Alpine image
-FROM php:8.2-fpm-alpine
+# Use official PHP 8.2 FPM image (Debian based)
+FROM php:8.2-fpm
 
 # Set working directory
 WORKDIR /var/www/html
 
 # Install system dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     git \
     curl \
-    libpng-dev \
-    libxml2-dev \
     zip \
     unzip \
-    oniguruma-dev \
-    mysql-client \
+    mariadb-client \
     nginx \
     supervisor \
     nodejs \
     npm \
-    bash
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-install \
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions && \
+    install-php-extensions \
     pdo \
     pdo_mysql \
     mbstring \
@@ -37,7 +36,7 @@ COPY . .
 
 # Copy nginx configuration
 COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/default.conf /etc/nginx/http.d/default.conf
+COPY docker/default.conf /etc/nginx/conf.d/default.conf
 
 # Copy supervisor configuration
 COPY docker/supervisord.conf /etc/supervisord.conf
@@ -47,7 +46,8 @@ COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+ENV FIREBASE_PROJECT_ID=build_dummy
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Install Node dependencies and build assets
 RUN npm install && npm run build

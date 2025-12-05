@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\ClassScheduleController;
+use App\Http\Controllers\CombinedScheduleController;
+use App\Http\Controllers\PersonalScheduleController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 
@@ -9,14 +12,9 @@ use Illuminate\Support\Facades\DB;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
 */
 
-// Health Check Endpoint
+// --- Health Check Endpoint (Bawaan Temanmu) ---
 Route::get('health', function () {
     try {
         DB::connection()->getPdo();
@@ -34,22 +32,47 @@ Route::get('health', function () {
     ]);
 });
 
-// Authentication Routes
-Route::post('users', [AuthController::class, 'register']); // RESTful: POST /api/users for creating user
+// --- Public Routes (Bisa diakses tanpa login) ---
+Route::post('users', [AuthController::class, 'register']);
 
 Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
-    Route::delete('login', [AuthController::class, 'logout']); // RESTful: DELETE to remove session
+    Route::delete('login', [AuthController::class, 'logout']);
+    // Refresh endpoint - excluded from auth:api middleware so it can accept expired tokens
     Route::post('refresh', [AuthController::class, 'refresh']);
-    Route::get('user', [AuthController::class, 'me']); // RESTful: GET /api/auth/user for current user
+    Route::get('user', [AuthController::class, 'me']);
+    Route::post('profile', [AuthController::class, 'updateProfile']);
 });
 
-// Class Schedule Routes - Protected by JWT
-// RESTful API for nested resource: /classrooms/{classroom}/schedules
+// --- Protected Routes (Hanya bisa diakses jika sudah login) ---
 Route::middleware('auth:api')->group(function () {
+
+    // Classroom Routes
+    Route::apiResource('classrooms', ClassroomController::class);
+    Route::post('classrooms/join', [ClassroomController::class, 'join']);
+    Route::post('classrooms/{classroom}/leave', [ClassroomController::class, 'leave']);
+    Route::post('classrooms/{classroom}/remove-member', [ClassroomController::class, 'removeMember']);
+    Route::post('classrooms/{classroom}/transfer-ownership', [ClassroomController::class, 'transferOwnership']);
+
     // Nested resource routes for class schedules
     Route::apiResource('classrooms.schedules', ClassScheduleController::class)->parameters([
         'classrooms' => 'classroom',
         'schedules' => 'schedule'
     ]);
+
+    Route::apiResource('personal-schedules', PersonalScheduleController::class);
+
+    // Combined Schedules Route - Menggabungkan personal dan class schedules
+    Route::get('schedules', [CombinedScheduleController::class, 'index']);
+
+    // Reminder Routes
+    Route::apiResource('reminders', \App\Http\Controllers\ReminderController::class);
+
+    // Device Token Routes
+    Route::post('device-tokens', [\App\Http\Controllers\DeviceTokenController::class, 'store']);
+
+    // Notification Routes
+    Route::get('notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::patch('notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+    Route::patch('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead']);
 });
