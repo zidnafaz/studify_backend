@@ -30,5 +30,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="JWT_SECRET" value="TestSecretKeyForJWTAuthMustBeAtLeast32CharactersLong"/>
+        <env name="GOOGLE_CLOUD_PROJECT" value="test-project-id"/>
     </php>
 </phpunit>

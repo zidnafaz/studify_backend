@@ -26,6 +26,9 @@ class ClassSchedule extends Model
     ];
 
     protected $casts = [
+        'classroom_id' => 'integer',
+        'coordinator_1' => 'integer',
+        'coordinator_2' => 'integer',
         'start_time' => 'datetime',
         'end_time' => 'datetime',
     ];

@@ -67,4 +67,12 @@ Route::middleware('auth:api')->group(function () {
 
     // Reminder Routes
     Route::apiResource('reminders', \App\Http\Controllers\ReminderController::class);
+
+    // Device Token Routes
+    Route::post('device-tokens', [\App\Http\Controllers\DeviceTokenController::class, 'store']);
+
+    // Notification Routes
+    Route::get('notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::patch('notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+    Route::patch('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead']);
 });

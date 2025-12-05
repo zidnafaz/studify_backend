@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ClassSchedule;
 use App\Models\Classroom;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -15,12 +16,15 @@ class ClassScheduleController extends BaseController
 {
     use AuthorizesRequests;
 
+    protected $notificationService;
+
     /**
      * Create a new controller instance.
      */
-    public function __construct()
+    public function __construct(NotificationService $notificationService)
     {
         $this->middleware('auth:api');
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -29,17 +33,26 @@ class ClassScheduleController extends BaseController
      * @param  int  $classroomId
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index($classroomId)
+    public function index(Request $request, $classroomId)
     {
         $classroom = Classroom::findOrFail($classroomId);
 
         // Check authorization - user must be member of classroom
         $this->authorize('view', [ClassSchedule::class, $classroom]);
 
-        $schedules = ClassSchedule::where('classroom_id', $classroomId)
+        $query = ClassSchedule::where('classroom_id', $classroomId)
             ->with(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders'])
-            ->orderBy('start_time', 'asc')
-            ->get();
+            ->orderBy('start_time', 'asc');
+
+        if ($request->has('start_date')) {
+            $query->whereDate('start_time', '>=', $request->start_date);
+        }
+
+        if ($request->has('end_date')) {
+            $query->whereDate('end_time', '<=', $request->end_date);
+        }
+
+        $schedules = $query->get();
 
         return response()->json([
             'data' => $schedules
@@ -243,10 +256,45 @@ class ClassScheduleController extends BaseController
         // Load relationships
         $schedule->load(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders']);
 
+        // Send notification to all classroom members
+        $this->notifyClassroomMembers($classroom, $schedule);
+
         return response()->json([
             'message' => 'Jadwal kelas berhasil diperbarui',
             'data' => $schedule
         ], 200);
+    }
+
+    private function notifyClassroomMembers(Classroom $classroom, ClassSchedule $schedule)
+    {
+        // Get all members and owner
+        $users = $classroom->users;
+        if (!$users->contains('id', $classroom->owner_id)) {
+            $users->push($classroom->owner);
+        }
+
+        // Filter out current user
+        $currentUser = Auth::user();
+        $usersToNotify = $users->filter(function ($user) use ($currentUser) {
+            return $user->id !== $currentUser->id;
+        });
+
+        if ($usersToNotify->isEmpty()) {
+            return;
+        }
+
+        $title = "Jadwal Diperbarui: {$schedule->title}";
+        $date = Carbon::parse($schedule->start_time)->format('d M Y');
+        $time = Carbon::parse($schedule->start_time)->format('H:i');
+        $body = "Jadwal untuk {$date} pukul {$time} telah diperbarui.";
+
+        $data = [
+            'schedule_id' => (string) $schedule->id,
+            'type' => 'class_schedule_update',
+            'classroom_id' => (string) $classroom->id,
+        ];
+
+        $this->notificationService->sendToUsers($usersToNotify, $title, $body, $data);
     }
 
     /**
