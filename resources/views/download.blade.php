@@ -72,8 +72,7 @@
         <p>The app is currently in development.</p>
 
         <!-- You can replace this href with a direct link to your APK file in public folder or Google Drive -->
-        <a href="#" class="btn" onclick="alert('Please ask the developer for the APK file!'); return false;">Download
-            APK</a>
+        <a href="{{ asset('studify.apk') }}" class="btn" download>Download APK</a>
 
         <p class="note">
             Since the app is not on Play Store yet, you need to install the APK manually.
