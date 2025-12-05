@@ -4,16 +4,15 @@
 mkdir -p /var/www/html/storage/app
 
 # Handle Firebase Credentials
-# If FIREBASE_CREDENTIALS starts with '{', it's JSON content, not a path.
-# We need to write it to a file and update the env var to point to that file.
-if echo "$FIREBASE_CREDENTIALS" | grep -q '^{'; then
+# Robust method: Decode Base64 env var to file
+if [ ! -z "$FIREBASE_CREDENTIALS_BASE64" ]; then
+    echo "Decoding FIREBASE_CREDENTIALS_BASE64 to file..."
+    echo "$FIREBASE_CREDENTIALS_BASE64" | base64 -d > /var/www/html/storage/app/firebase.json
+    export FIREBASE_CREDENTIALS=/var/www/html/storage/app/firebase.json
+elif echo "$FIREBASE_CREDENTIALS" | grep -q '^{'; then
+    # Fallback: JSON content
     echo "Detected JSON content in FIREBASE_CREDENTIALS. Writing to file..."
     echo "$FIREBASE_CREDENTIALS" > /var/www/html/storage/app/firebase.json
-    export FIREBASE_CREDENTIALS=/var/www/html/storage/app/firebase.json
-elif [ ! -z "$FIREBASE_CREDENTIALS_JSON" ]; then
-    # Fallback: If FIREBASE_CREDENTIALS_JSON is set, use that
-    echo "Writing FIREBASE_CREDENTIALS_JSON to file..."
-    echo "$FIREBASE_CREDENTIALS_JSON" > /var/www/html/storage/app/firebase.json
     export FIREBASE_CREDENTIALS=/var/www/html/storage/app/firebase.json
 fi
 
