@@ -5,14 +5,12 @@ FROM php:8.2-fpm-alpine
 WORKDIR /var/www/html
 
 # Install system dependencies
+# Install system dependencies
 RUN apk add --no-cache \
     git \
     curl \
-    libpng-dev \
-    libxml2-dev \
     zip \
     unzip \
-    oniguruma-dev \
     mysql-client \
     nginx \
     supervisor \
@@ -21,7 +19,9 @@ RUN apk add --no-cache \
     bash
 
 # Install PHP extensions
-RUN docker-php-ext-install \
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions && \
+    install-php-extensions \
     pdo \
     pdo_mysql \
     mbstring \
