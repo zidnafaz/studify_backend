@@ -1,23 +1,17 @@
 #!/bin/sh
 
-# Wait for database to be ready
-echo "Waiting for database connection..."
-until php artisan migrate:status > /dev/null 2>&1
-do
-    echo "Database is unavailable - sleeping"
-    sleep 2
-done
+# Clear caches to ensure fresh config
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
 
-echo "Database is up - executing migrations"
+# Run migrations
+echo "Running migrations..."
 php artisan migrate --force
 
-# Generate JWT secret if not exists
+# Generate JWT secret
+echo "Generating JWT secret..."
 php artisan jwt:secret --force || true
-
-# Cache configurations for better performance
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
 
 # Start supervisor
 exec /usr/bin/supervisord -c /etc/supervisord.conf
