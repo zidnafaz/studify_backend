@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Reminder;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class SendScheduleReminders extends Command
@@ -50,16 +51,29 @@ class SendScheduleReminders extends Command
             }
 
             $startTime = Carbon::parse($schedule->start_time);
-            $reminderTime = $startTime->subMinutes($reminder->minutes_before_start);
+            $reminderTime = $startTime->copy()->subMinutes($reminder->minutes_before_start);
+            $now = now();
+
+            Log::info("Reminder Check [ID: {$reminder->id}]", [
+                'schedule_id' => $schedule->id,
+                'schedule_title' => $schedule->title,
+                'start_time' => $startTime->toDateTimeString(),
+                'minutes_before' => $reminder->minutes_before_start,
+                'reminder_time' => $reminderTime->toDateTimeString(),
+                'current_time' => $now->toDateTimeString(),
+                'is_due' => $now->greaterThanOrEqualTo($reminderTime),
+                'is_too_late' => $now->greaterThanOrEqualTo($reminderTime->copy()->addHour()),
+            ]);
 
             // Check if it's time to remind (and we haven't missed it by too much, e.g. 1 hour)
-            if (now()->greaterThanOrEqualTo($reminderTime) && now()->lessThan($reminderTime->addHour())) {
+            if ($now->greaterThanOrEqualTo($reminderTime) && $now->lessThan($reminderTime->copy()->addHour())) {
                 $this->sendNotification($reminder, $schedule);
                 $count++;
-            } elseif (now()->greaterThanOrEqualTo($reminderTime->addHour())) {
+            } elseif ($now->greaterThanOrEqualTo($reminderTime->copy()->addHour())) {
                 // Mark as missed/failed if it's too late
                 $reminder->update(['status' => 'failed']);
                 $this->warn("Reminder {$reminder->id} missed.");
+                Log::warning("Reminder {$reminder->id} missed. Reminder time: {$reminderTime}, Now: {$now}");
             }
         }
 
