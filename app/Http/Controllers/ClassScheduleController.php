@@ -286,23 +286,18 @@ class ClassScheduleController extends BaseController
         $date = Carbon::parse($schedule->start_time)->format('d M Y');
         $time = Carbon::parse($schedule->start_time)->format('H:i');
 
-        if ($type === 'delete') {
-            $title = __('messages.schedule_cancelled_title', ['title' => $schedule->title]);
-            $body = __('messages.schedule_cancelled_body', ['date' => $date, 'time' => $time]);
-            $notificationType = 'class_schedule_delete';
-        } else {
-            $title = __('messages.schedule_updated_title', ['title' => $schedule->title]);
-            $body = __('messages.schedule_updated_body', ['date' => $date, 'time' => $time]);
-            $notificationType = 'class_schedule_update';
-        }
-
         $data = [
             'schedule_id' => (string) $schedule->id,
-            'type' => $notificationType,
             'classroom_id' => (string) $classroom->id,
+            'type' => $type === 'delete' ? 'class_schedule_delete' : 'class_schedule_update',
+            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            'title_key' => $type === 'delete' ? 'schedule_cancelled_title' : 'schedule_updated_title',
+            'title_args' => json_encode(['title' => $schedule->title]),
+            'body_key' => $type === 'delete' ? 'schedule_cancelled_body' : 'schedule_updated_body',
+            'body_args' => json_encode(['date' => $date, 'time' => $time]),
         ];
 
-        $this->notificationService->sendToUsers($usersToNotify, $title, $body, $data);
+        $this->notificationService->sendToUsers($usersToNotify, null, null, $data);
     }
 
     /**

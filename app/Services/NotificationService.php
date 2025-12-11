@@ -27,13 +27,13 @@ class NotificationService
      * @param array $data
      * @return void
      */
-    public function sendToUser(User $user, string $title, string $body, array $data = [])
+    public function sendToUser(User $user, ?string $title, ?string $body, array $data = [])
     {
         // Store notification in database
         NotificationModel::create([
             'user_id' => $user->id,
-            'title' => $title,
-            'body' => $body,
+            'title' => $title ?? 'Notification',
+            'body' => $body ?? '',
             'data' => $data,
         ]);
 
@@ -47,8 +47,11 @@ class NotificationService
         foreach ($tokens as $token) {
             try {
                 $message = CloudMessage::withTarget('token', $token->token)
-                    ->withNotification(Notification::create($title, $body))
                     ->withData($data);
+
+                if ($title !== null && $body !== null) {
+                    $message = $message->withNotification(Notification::create($title, $body));
+                }
 
                 $this->messaging->send($message);
             } catch (\Throwable $e) {
@@ -61,12 +64,12 @@ class NotificationService
      * Send notification to multiple users.
      *
      * @param iterable $users
-     * @param string $title
-     * @param string $body
+     * @param string|null $title
+     * @param string|null $body
      * @param array $data
      * @return void
      */
-    public function sendToUsers($users, string $title, string $body, array $data = [])
+    public function sendToUsers($users, ?string $title, ?string $body, array $data = [])
     {
         foreach ($users as $user) {
             $this->sendToUser($user, $title, $body, $data);

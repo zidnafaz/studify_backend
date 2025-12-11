@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ReminderTest extends TestCase
 {
@@ -19,7 +20,7 @@ class ReminderTest extends TestCase
     {
         $user = User::factory()->create();
         $schedule = PersonalSchedule::factory()->create(['user_id' => $user->id]);
-        $token = auth()->login($user);
+        $token = JWTAuth::fromUser($user);
 
         $response = $this->withHeader('Authorization', "Bearer $token")
             ->postJson('/api/reminders', [
@@ -52,7 +53,37 @@ class ReminderTest extends TestCase
         $user = User::factory()->create();
         $classroom = Classroom::factory()->create(['owner_id' => $user->id]);
         $schedule = ClassSchedule::factory()->create(['classroom_id' => $classroom->id]);
-        $token = auth()->login($user);
+        $token = JWTAuth::fromUser($user);
+
+        $response = $this->withHeader('Authorization', "Bearer $token")
+            ->postJson('/api/reminders', [
+                'remindable_id' => $schedule->id,
+                'remindable_type' => 'class_schedule',
+                'minutes_before_start' => 30,
+            ]);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('reminders', [
+            'remindable_id' => $schedule->id,
+            'remindable_type' => ClassSchedule::class,
+            'minutes_before_start' => 30,
+        ]);
+    }
+
+    public function test_coordinator_can_create_reminder_for_class_schedule()
+    {
+        $owner = User::factory()->create();
+        $coordinator = User::factory()->create();
+        $classroom = Classroom::factory()->create(['owner_id' => $owner->id]);
+        $classroom->users()->attach($coordinator->id);
+
+        $schedule = ClassSchedule::factory()->create([
+            'classroom_id' => $classroom->id,
+            'coordinator_1' => $coordinator->id,
+        ]);
+
+        $token = JWTAuth::fromUser($coordinator);
 
         $response = $this->withHeader('Authorization', "Bearer $token")
             ->postJson('/api/reminders', [
@@ -75,7 +106,7 @@ class ReminderTest extends TestCase
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
         $schedule = PersonalSchedule::factory()->create(['user_id' => $otherUser->id]);
-        $token = auth()->login($user);
+        $token = JWTAuth::fromUser($user);
 
         $response = $this->withHeader('Authorization', "Bearer $token")
             ->postJson('/api/reminders', [
@@ -95,7 +126,7 @@ class ReminderTest extends TestCase
         $classroom->users()->attach($user->id);
         $schedule = ClassSchedule::factory()->create(['classroom_id' => $classroom->id]);
 
-        $token = auth()->login($user);
+        $token = JWTAuth::fromUser($user);
 
         $response = $this->withHeader('Authorization', "Bearer $token")
             ->postJson('/api/reminders', [
@@ -116,12 +147,12 @@ class ReminderTest extends TestCase
             'remindable_type' => PersonalSchedule::class,
         ]);
 
-        $token = auth()->login($user);
+        $token = JWTAuth::fromUser($user);
 
         $response = $this->withHeader('Authorization', "Bearer $token")
             ->deleteJson("/api/reminders/{$reminder->id}");
 
-        $response->assertStatus(204);
+        $response->assertStatus(200);
         $this->assertSoftDeleted('reminders', ['id' => $reminder->id]);
     }
 }

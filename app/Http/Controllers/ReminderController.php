@@ -122,7 +122,7 @@ class ReminderController extends Controller
         } elseif ($schedule instanceof ClassSchedule) {
             // Check if user is owner or coordinator
             $isOwner = $schedule->classroom->owner_id === $user->id;
-            $isCoordinator = $schedule->coordinator_id === $user->id;
+            $isCoordinator = $schedule->coordinator_1 === $user->id || $schedule->coordinator_2 === $user->id;
 
             if (!$isOwner && !$isCoordinator) {
                 abort(403, 'Unauthorized action. Only Owner or Coordinator can manage reminders.');

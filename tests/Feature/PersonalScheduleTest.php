@@ -66,7 +66,7 @@ class PersonalScheduleTest extends TestCase
 
         $response->assertCreated()
             ->assertJson([
-                'message' => 'Jadwal pribadi berhasil dibuat',
+                'message' => 'Personal schedule created successfully',
                 'data' => [
                     'title' => 'Belajar Flutter',
                     'location' => 'Perpustakaan',

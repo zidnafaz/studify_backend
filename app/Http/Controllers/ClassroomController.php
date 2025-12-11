@@ -295,6 +295,23 @@ class ClassroomController extends Controller
             ], 400);
         }
 
+        // Update all schedules where this user is coordinator - set back to owner
+        ClassSchedule::where('classroom_id', $id)
+            ->where(function ($query) use ($user) {
+                $query->where('coordinator_1', $user->id)
+                    ->orWhere('coordinator_2', $user->id);
+            })
+            ->get()
+            ->each(function ($schedule) use ($user, $classroom) {
+                if ($schedule->coordinator_1 == $user->id) {
+                    $schedule->coordinator_1 = $classroom->owner_id;
+                }
+                if ($schedule->coordinator_2 == $user->id) {
+                    $schedule->coordinator_2 = $classroom->owner_id;
+                }
+                $schedule->save();
+            });
+
         // Remove user from classroom
         $classroom->users()->detach($user->id);
 
