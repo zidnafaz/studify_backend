@@ -24,7 +24,7 @@ class ReminderController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation errors',
+                'message' => __('messages.validation_errors'),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -36,7 +36,7 @@ class ReminderController extends Controller
         $remindable = $remindableType::find($request->remindable_id);
 
         if (!$remindable) {
-            return response()->json(['message' => 'Schedule not found'], 404);
+            return response()->json(['message' => __('messages.schedule_not_found')], 404);
         }
 
         // Authorization Check
@@ -50,7 +50,7 @@ class ReminderController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Reminder created successfully',
+            'message' => __('messages.reminder_created'),
             'data' => $reminder,
         ], 201);
     }
@@ -63,7 +63,7 @@ class ReminderController extends Controller
         $reminder = Reminder::find($id);
 
         if (!$reminder) {
-            return response()->json(['message' => 'Reminder not found'], 404);
+            return response()->json(['message' => __('messages.reminder_not_found')], 404);
         }
 
         // Authorization Check
@@ -76,7 +76,7 @@ class ReminderController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation errors',
+                'message' => __('messages.validation_errors'),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -84,7 +84,7 @@ class ReminderController extends Controller
         $reminder->update($request->only(['minutes_before_start', 'status']));
 
         return response()->json([
-            'message' => 'Reminder updated successfully',
+            'message' => __('messages.reminder_updated'),
             'data' => $reminder,
         ]);
     }
@@ -97,7 +97,7 @@ class ReminderController extends Controller
         $reminder = Reminder::find($id);
 
         if (!$reminder) {
-            return response()->json(['message' => 'Reminder not found'], 404);
+            return response()->json(['message' => __('messages.reminder_not_found')], 404);
         }
 
         // Authorization Check
@@ -105,7 +105,7 @@ class ReminderController extends Controller
 
         $reminder->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['message' => __('messages.reminder_deleted')], 200);
     }
 
     /**

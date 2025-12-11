@@ -50,7 +50,7 @@ class PersonalScheduleController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation errors',
+                'message' => __('messages.validation_errors'),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -69,7 +69,7 @@ class PersonalScheduleController extends Controller
             $createdSchedules = $this->createRepeatingSchedules($data, $repeatDays, $repeatCount);
 
             return response()->json([
-                'message' => count($createdSchedules) . ' jadwal pribadi berhasil dibuat',
+                'message' => __('messages.personal_schedules_created', ['count' => count($createdSchedules)]),
                 'data' => $createdSchedules[0] ?? null, // Return first schedule or null
             ], 201);
         }
@@ -104,7 +104,7 @@ class PersonalScheduleController extends Controller
         $schedule->load('reminders');
 
         return response()->json([
-            'message' => 'Jadwal pribadi berhasil dibuat',
+            'message' => __('messages.personal_schedule_created'),
             'data' => $schedule,
         ], 201);
     }
@@ -120,7 +120,7 @@ class PersonalScheduleController extends Controller
 
         if (!$schedule) {
             return response()->json([
-                'message' => 'Jadwal pribadi tidak ditemukan',
+                'message' => __('messages.schedule_not_found'),
             ], 404);
         }
 
@@ -139,7 +139,7 @@ class PersonalScheduleController extends Controller
 
         if (!$schedule) {
             return response()->json([
-                'message' => 'Jadwal pribadi tidak ditemukan',
+                'message' => __('messages.schedule_not_found'),
             ], 404);
         }
 

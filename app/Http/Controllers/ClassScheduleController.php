@@ -92,7 +92,7 @@ class ClassScheduleController extends BaseController
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation errors',
+                'message' => __('messages.validation_errors'),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -112,7 +112,7 @@ class ClassScheduleController extends BaseController
             );
 
             return response()->json([
-                'message' => count($createdSchedules) . ' jadwal kelas berhasil dibuat',
+                'message' => __('messages.class_schedules_created', ['count' => count($createdSchedules)]),
                 'data' => $createdSchedules
             ], 201);
         }
@@ -154,7 +154,7 @@ class ClassScheduleController extends BaseController
         $schedule->load(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders']);
 
         return response()->json([
-            'message' => 'Jadwal kelas berhasil dibuat',
+            'message' => __('messages.class_schedule_created'),
             'data' => $schedule
         ], 201);
     }

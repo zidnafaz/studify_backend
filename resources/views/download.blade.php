@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Download Studify</title>
+    <title>{{ __('messages.download_title') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -68,14 +68,14 @@
 
 <body>
     <div class="container">
-        <h1>Download Studify</h1>
-        <p>The app is currently in development.</p>
+        <h1>{{ __('messages.download_heading') }}</h1>
+        <p>{{ __('messages.app_in_development') }}</p>
 
         <!-- You can replace this href with a direct link to your APK file in public folder or Google Drive -->
-        <a href="{{ asset('studify.apk') }}" class="btn" download>Download APK</a>
+        <a href="{{ asset('studify.apk') }}" class="btn" download>{{ __('messages.download_apk') }}</a>
 
         <p class="note">
-            Since the app is not on Play Store yet, you need to install the APK manually.
+            {{ __('messages.manual_install_note') }}
         </p>
     </div>
 </body>

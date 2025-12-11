@@ -21,7 +21,7 @@ class DeviceTokenController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation errors',
+                'message' => __('messages.validation_errors'),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -43,7 +43,7 @@ class DeviceTokenController extends Controller
         );
 
         return response()->json([
-            'message' => 'Device token saved successfully',
+            'message' => __('messages.device_token_saved'),
             'data' => $deviceToken,
         ], 200);
     }

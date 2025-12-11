@@ -39,7 +39,7 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation errors',
+                'message' => __('messages.validation_errors'),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -77,7 +77,7 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation errors',
+                'message' => __('messages.validation_errors'),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -86,7 +86,7 @@ class AuthController extends Controller
 
         if (!$token = Auth::attempt($credentials)) {
             return response()->json([
-                'message' => 'Invalid email or password',
+                'message' => __('messages.invalid_credentials'),
             ], 401);
         }
 
@@ -134,11 +134,11 @@ class AuthController extends Controller
         } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
             // Token is beyond refresh_ttl window
             return response()->json([
-                'message' => 'Token has expired and cannot be refreshed. Please login again.',
+                'message' => __('messages.token_expired_refresh'),
             ], 401);
         } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
             return response()->json([
-                'message' => 'Could not refresh token',
+                'message' => __('messages.token_refresh_failed'),
             ], 401);
         }
     }
@@ -169,6 +169,7 @@ class AuthController extends Controller
      */
     public function updateProfile(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
@@ -177,7 +178,7 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation errors',
+                'message' => __('messages.validation_errors'),
                 'errors' => $validator->errors(),
             ], 422);
         }
@@ -187,7 +188,7 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Profile updated successfully',
+            'message' => __('messages.profile_updated'),
             'data' => $user,
         ]);
     }

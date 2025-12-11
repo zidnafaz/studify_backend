@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Join Class - Studify</title>
+    <title>{{ __('messages.join_class_title') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -61,18 +61,18 @@
 </head>
 <body>
     <div class="container">
-        <h1>Join Class</h1>
-        <p>You've been invited to join a class on Studify.</p>
-        
+        <h1>{{ __('messages.join_class_heading') }}</h1>
+        <p>{{ __('messages.join_class_body') }}</p>
+
         <div class="action-container">
             <div class="code">{{ $code }}</div>
-            <a href="{{ $deepLink }}" class="btn" id="joinBtn">Open in App</a>
+            <a href="{{ $deepLink }}" class="btn" id="joinBtn">{{ __('messages.open_in_app') }}</a>
         </div>
-        
+
         <p style="font-size: 0.8rem; margin-top: 2rem;">
-            If the app doesn't open automatically, click the button above.
+            {{ __('messages.open_app_help') }}
             <br><br>
-            Don't have the app? <a href="{{ $fallbackUrl }}">Download here</a>
+            {{ __('messages.dont_have_app') }} <a href="{{ $fallbackUrl }}">{{ __('messages.download_here') }}</a>
         </p>
     </div>
 

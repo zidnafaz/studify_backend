@@ -31,12 +31,12 @@ class NotificationController extends Controller
         $notification = Notification::where('user_id', Auth::id())->find($id);
 
         if (!$notification) {
-            return response()->json(['message' => 'Notification not found'], 404);
+            return response()->json(['message' => __('messages.notification_not_found')], 404);
         }
 
         $notification->update(['is_read' => true]);
 
-        return response()->json(['message' => 'Notification marked as read']);
+        return response()->json(['message' => __('messages.notification_marked_read')]);
     }
 
     /**
@@ -48,6 +48,6 @@ class NotificationController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        return response()->json(['message' => 'All notifications marked as read']);
+        return response()->json(['message' => __('messages.all_notifications_marked_read')]);
     }
 }

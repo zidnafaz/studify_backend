@@ -12,10 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Register the SetLocale middleware
+        $middleware->append(\App\Http\Middleware\SetLocale::class);
+
         // Trust all proxies for Render deployment
-        $middleware->trustProxies(at: '*', headers: Illuminate\Http\Request::HEADER_X_FORWARDED_FOR | 
-            Illuminate\Http\Request::HEADER_X_FORWARDED_HOST | 
-            Illuminate\Http\Request::HEADER_X_FORWARDED_PORT | 
+        $middleware->trustProxies(at: '*', headers: Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |
+            Illuminate\Http\Request::HEADER_X_FORWARDED_HOST |
+            Illuminate\Http\Request::HEADER_X_FORWARDED_PORT |
             Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

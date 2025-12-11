@@ -13,7 +13,7 @@ class CombinedScheduleController extends Controller
     /**
      * MENAMPILKAN SEMUA JADWAL GABUNGAN (GET)
      * Menggabungkan personal schedules dan class schedules dari semua classroom user
-     * 
+     *
      * Query Parameters:
      * - source: Filter berdasarkan sumber data
      *   - 'personal' : Hanya personal schedules
@@ -80,7 +80,7 @@ class CombinedScheduleController extends Controller
                 // Check if user has access to this classroom
                 if ($classrooms->isEmpty()) {
                     return response()->json([
-                        'message' => 'Classroom not found or you do not have access',
+                        'message' => __('messages.classroom_not_found_or_access'),
                     ], 404);
                 }
             }
@@ -142,7 +142,7 @@ class CombinedScheduleController extends Controller
 
     /**
      * Get list of available sources for filtering
-     * 
+     *
      * @param \App\Models\User $user
      * @return array
      */

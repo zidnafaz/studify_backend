@@ -45,7 +45,7 @@ class ClassroomController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Validation error',
+                'message' => __('messages.validation_error'),
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -68,7 +68,7 @@ class ClassroomController extends Controller
         $classroom->loadCount('users');
 
         return response()->json([
-            'message' => 'Classroom created successfully',
+            'message' => __('messages.classroom_created'),
             'data' => $classroom
         ], 201);
     }
@@ -89,7 +89,7 @@ class ClassroomController extends Controller
 
         if (!$classroom) {
             return response()->json([
-                'message' => 'Classroom not found'
+                'message' => __('messages.classroom_not_found')
             ], 404);
         }
 
@@ -97,7 +97,7 @@ class ClassroomController extends Controller
         $user = Auth::user();
         if ($classroom->owner_id !== $user->id && !$classroom->users->contains($user->id)) {
             return response()->json([
-                'message' => 'Unauthorized access'
+                'message' => __('messages.unauthorized_access')
             ], 403);
         }
 
