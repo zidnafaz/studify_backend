@@ -111,6 +111,11 @@ class ClassScheduleController extends BaseController
                 $repeatCount
             );
 
+            // Send notification for the first created schedule
+            if (!empty($createdSchedules)) {
+                $this->notifyClassroomMembers($classroom, $createdSchedules[0], 'create');
+            }
+
             return response()->json([
                 'message' => __('messages.class_schedules_created', ['count' => count($createdSchedules)]),
                 'data' => $createdSchedules
@@ -152,6 +157,9 @@ class ClassScheduleController extends BaseController
 
         // Load relationships
         $schedule->load(['coordinator1:id,name,email', 'coordinator2:id,name,email', 'reminders']);
+
+        // Send notification
+        $this->notifyClassroomMembers($classroom, $schedule, 'create');
 
         return response()->json([
             'message' => __('messages.class_schedule_created'),
@@ -286,18 +294,51 @@ class ClassScheduleController extends BaseController
         $date = Carbon::parse($schedule->start_time)->format('d M Y');
         $time = Carbon::parse($schedule->start_time)->format('H:i');
 
+        $titleKey = match($type) {
+            'delete' => 'messages.schedule_cancelled_title',
+            'create' => 'messages.schedule_created_title',
+            default => 'messages.schedule_updated_title',
+        };
+
+        $bodyKey = match($type) {
+            'delete' => 'messages.schedule_cancelled_body',
+            'create' => 'messages.schedule_created_body',
+            default => 'messages.schedule_updated_body',
+        };
+
+        $title = __($titleKey, ['title' => $schedule->title]);
+        $body = __($bodyKey, ['date' => $date, 'time' => $time]);
+
+        $notifType = match($type) {
+            'delete' => 'class_schedule_delete',
+            'create' => 'class_schedule_create',
+            default => 'class_schedule_update',
+        };
+
+        $titleKeyRaw = match($type) {
+            'delete' => 'schedule_cancelled_title',
+            'create' => 'schedule_created_title',
+            default => 'schedule_updated_title',
+        };
+
+        $bodyKeyRaw = match($type) {
+            'delete' => 'schedule_cancelled_body',
+            'create' => 'schedule_created_body',
+            default => 'schedule_updated_body',
+        };
+
         $data = [
             'schedule_id' => (string) $schedule->id,
             'classroom_id' => (string) $classroom->id,
-            'type' => $type === 'delete' ? 'class_schedule_delete' : 'class_schedule_update',
+            'type' => $notifType,
             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-            'title_key' => $type === 'delete' ? 'schedule_cancelled_title' : 'schedule_updated_title',
+            'title_key' => $titleKeyRaw,
             'title_args' => json_encode(['title' => $schedule->title]),
-            'body_key' => $type === 'delete' ? 'schedule_cancelled_body' : 'schedule_updated_body',
+            'body_key' => $bodyKeyRaw,
             'body_args' => json_encode(['date' => $date, 'time' => $time]),
         ];
 
-        $this->notificationService->sendToUsers($usersToNotify, null, null, $data);
+        $this->notificationService->sendToUsers($usersToNotify, $title, $body, $data);
     }
 
     /**

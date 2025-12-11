@@ -48,6 +48,8 @@ return [
     // Notifications
     'schedule_updated_title' => 'Jadwal Diperbarui: :title',
     'schedule_updated_body' => 'Jadwal untuk :date pukul :time telah diperbarui.',
+    'schedule_created_title' => 'Jadwal Baru: :title',
+    'schedule_created_body' => 'Jadwal baru ditambahkan untuk :date pukul :time.',
     'schedule_cancelled_title' => 'Jadwal Dibatalkan: :title',
     'schedule_cancelled_body' => 'Jadwal untuk :date pukul :time telah dibatalkan.',
     'member_joined_title' => 'Anggota Baru Bergabung',

@@ -48,6 +48,8 @@ return [
     // Notifications
     'schedule_updated_title' => 'Schedule Updated: :title',
     'schedule_updated_body' => 'Schedule for :date at :time has been updated.',
+    'schedule_created_title' => 'New Schedule: :title',
+    'schedule_created_body' => 'New schedule added for :date at :time.',
     'schedule_cancelled_title' => 'Schedule Cancelled: :title',
     'schedule_cancelled_body' => 'Schedule for :date at :time has been cancelled.',
     'member_joined_title' => 'New Member Joined',
