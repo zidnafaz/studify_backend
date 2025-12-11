@@ -186,7 +186,7 @@ class ClassroomController extends Controller
         }
 
         // Only owner can delete
-        if ($classroom->owner_id !== Auth::id()) {
+        if ($classroom->owner_id != Auth::id()) {
             return response()->json([
                 'message' => 'Only classroom owner can delete'
             ], 403);
