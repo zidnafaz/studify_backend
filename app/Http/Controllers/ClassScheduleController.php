@@ -265,7 +265,7 @@ class ClassScheduleController extends BaseController
         ], 200);
     }
 
-    private function notifyClassroomMembers(Classroom $classroom, ClassSchedule $schedule)
+    private function notifyClassroomMembers(Classroom $classroom, ClassSchedule $schedule, string $type = 'update')
     {
         // Get all members and owner
         $users = $classroom->users;
@@ -283,14 +283,22 @@ class ClassScheduleController extends BaseController
             return;
         }
 
-        $title = "Jadwal Diperbarui: {$schedule->title}";
         $date = Carbon::parse($schedule->start_time)->format('d M Y');
         $time = Carbon::parse($schedule->start_time)->format('H:i');
-        $body = "Jadwal untuk {$date} pukul {$time} telah diperbarui.";
+
+        if ($type === 'delete') {
+            $title = __('messages.schedule_cancelled_title', ['title' => $schedule->title]);
+            $body = __('messages.schedule_cancelled_body', ['date' => $date, 'time' => $time]);
+            $notificationType = 'class_schedule_delete';
+        } else {
+            $title = __('messages.schedule_updated_title', ['title' => $schedule->title]);
+            $body = __('messages.schedule_updated_body', ['date' => $date, 'time' => $time]);
+            $notificationType = 'class_schedule_update';
+        }
 
         $data = [
             'schedule_id' => (string) $schedule->id,
-            'type' => 'class_schedule_update',
+            'type' => $notificationType,
             'classroom_id' => (string) $classroom->id,
         ];
 
@@ -312,6 +320,9 @@ class ClassScheduleController extends BaseController
 
         // Check authorization - owner or coordinator can delete
         $this->authorize('delete', [$schedule, $classroom]);
+
+        // Send notification before deletion
+        $this->notifyClassroomMembers($classroom, $schedule, 'delete');
 
         $schedule->delete();
 

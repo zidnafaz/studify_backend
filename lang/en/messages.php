@@ -44,4 +44,12 @@ return [
     'reminder_not_found' => 'Reminder not found',
     'reminder_updated' => 'Reminder updated successfully',
     'reminder_deleted' => 'Reminder deleted successfully',
+
+    // Notifications
+    'schedule_updated_title' => 'Schedule Updated: :title',
+    'schedule_updated_body' => 'Schedule for :date at :time has been updated.',
+    'schedule_cancelled_title' => 'Schedule Cancelled: :title',
+    'schedule_cancelled_body' => 'Schedule for :date at :time has been cancelled.',
+    'member_joined_title' => 'New Member Joined',
+    'member_joined_body' => ':name has joined the class :classroom',
 ];

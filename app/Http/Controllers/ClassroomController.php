@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Classroom;
 use App\Models\ClassSchedule;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
@@ -11,6 +12,13 @@ use Illuminate\Support\Facades\Auth;
 
 class ClassroomController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * Display a listing of classrooms.
      */
@@ -95,7 +103,7 @@ class ClassroomController extends Controller
 
         // Check if user has access
         $user = Auth::user();
-        if ($classroom->owner_id !== $user->id && !$classroom->users->contains($user->id)) {
+        if ((int)$classroom->owner_id !== (int)$user->id && !$classroom->users->contains($user->id)) {
             return response()->json([
                 'message' => __('messages.unauthorized_access')
             ], 403);
@@ -144,7 +152,7 @@ class ClassroomController extends Controller
         }
 
         // Only owner can update
-        if ($classroom->owner_id !== Auth::id()) {
+        if ((int)$classroom->owner_id !== (int)Auth::id()) {
             return response()->json([
                 'message' => 'Only classroom owner can update'
             ], 403);
@@ -186,7 +194,7 @@ class ClassroomController extends Controller
         }
 
         // Only owner can delete
-        if ($classroom->owner_id != Auth::id()) {
+        if ((int)$classroom->owner_id !== (int)Auth::id()) {
             return response()->json([
                 'message' => 'Only classroom owner can delete'
             ], 403);
@@ -239,6 +247,19 @@ class ClassroomController extends Controller
         $classroom->load(['owner:id,name,email', 'users:id,name,email']);
         $classroom->loadCount('users');
 
+        // Notify owner about new member
+        $this->notificationService->sendToUser(
+            $classroom->owner,
+            __('messages.member_joined_title'),
+            __('messages.member_joined_body', ['name' => $user->name, 'classroom' => $classroom->name]),
+            [
+                'type' => 'member_joined',
+                'classroom_id' => (string) $classroom->id,
+                'user_id' => (string) $user->id,
+                'user_name' => $user->name,
+            ]
+        );
+
         return response()->json([
             'message' => 'Successfully joined classroom',
             'data' => $classroom
@@ -261,14 +282,14 @@ class ClassroomController extends Controller
         $user = Auth::user();
 
         // Owner cannot leave their own classroom
-        if ($classroom->owner_id === $user->id) {
+        if ((int)$classroom->owner_id === (int)$user->id) {
             return response()->json([
                 'message' => 'Classroom owner cannot leave. Please transfer ownership first.'
             ], 400);
         }
 
         // Check if user is a member
-        if (!$classroom->users->contains($user->id)) {
+        if (!$classroom->users()->where('users.id', $user->id)->exists()) {
             return response()->json([
                 'message' => 'You are not a member of this classroom'
             ], 400);
@@ -296,7 +317,7 @@ class ClassroomController extends Controller
         }
 
         // Only owner can remove members
-        if ($classroom->owner_id !== Auth::id()) {
+        if ((int)$classroom->owner_id !== (int)Auth::id()) {
             return response()->json([
                 'message' => 'Only classroom owner can remove members'
             ], 403);
@@ -313,17 +334,17 @@ class ClassroomController extends Controller
             ], 422);
         }
 
-        $userId = $request->user_id;
+        $userId = (int)$request->user_id;
 
         // Cannot remove owner
-        if ($classroom->owner_id === $userId) {
+        if ((int)$classroom->owner_id === $userId) {
             return response()->json([
                 'message' => 'Cannot remove classroom owner'
             ], 400);
         }
 
         // Check if user is a member
-        if (!$classroom->users->contains($userId)) {
+        if (!$classroom->users()->where('users.id', $userId)->exists()) {
             return response()->json([
                 'message' => 'User is not a member of this classroom'
             ], 400);
@@ -368,7 +389,7 @@ class ClassroomController extends Controller
         }
 
         // Only owner can transfer ownership
-        if ($classroom->owner_id !== Auth::id()) {
+        if ((int)$classroom->owner_id !== (int)Auth::id()) {
             return response()->json([
                 'message' => 'Only classroom owner can transfer ownership'
             ], 403);
@@ -385,10 +406,10 @@ class ClassroomController extends Controller
             ], 422);
         }
 
-        $newOwnerId = $request->new_owner_id;
+        $newOwnerId = (int)$request->new_owner_id;
 
         // Check if new owner is a member
-        if (!$classroom->users->contains($newOwnerId)) {
+        if (!$classroom->users()->where('users.id', $newOwnerId)->exists()) {
             return response()->json([
                 'message' => 'New owner must be a member of the classroom'
             ], 400);

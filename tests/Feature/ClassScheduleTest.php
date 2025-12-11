@@ -85,6 +85,26 @@ class ClassScheduleTest extends TestCase
         $response->assertStatus(200);
     }
 
+    /**
+     * Test: Notification is sent on schedule delete
+     */
+    public function test_notification_is_sent_on_schedule_delete()
+    {
+        $schedule = ClassSchedule::factory()->create([
+            'classroom_id' => $this->classroom->id,
+            'title' => 'To Be Deleted',
+        ]);
+
+        // Expect notification to be sent
+        $this->notificationServiceMock->shouldReceive('sendToUsers')->once();
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $this->token,
+        ])->deleteJson("/api/classrooms/{$this->classroom->id}/schedules/{$schedule->id}");
+
+        $response->assertStatus(200);
+    }
+
 
     /**
      * Test: Member can list class schedules
@@ -622,10 +642,13 @@ class ClassScheduleTest extends TestCase
      */
     public function test_owner_can_create_repeating_schedules()
     {
+        $startTime = now()->addYear()->setTime(8, 0, 0);
+        $endTime = $startTime->copy()->addHours(2);
+
         $scheduleData = [
             'title' => 'Weekly Class',
-            'start_time' => '2025-11-20 08:00:00',
-            'end_time' => '2025-11-20 10:00:00',
+            'start_time' => $startTime->format('Y-m-d H:i:s'),
+            'end_time' => $endTime->format('Y-m-d H:i:s'),
             'location' => 'Ruang 301',
             'lecturer' => 'Dr. John Doe',
             'description' => 'Weekly repeating class',

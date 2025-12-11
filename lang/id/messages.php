@@ -44,4 +44,12 @@ return [
     'reminder_not_found' => 'Pengingat tidak ditemukan',
     'reminder_updated' => 'Pengingat berhasil diperbarui',
     'reminder_deleted' => 'Pengingat berhasil dihapus',
+
+    // Notifications
+    'schedule_updated_title' => 'Jadwal Diperbarui: :title',
+    'schedule_updated_body' => 'Jadwal untuk :date pukul :time telah diperbarui.',
+    'schedule_cancelled_title' => 'Jadwal Dibatalkan: :title',
+    'schedule_cancelled_body' => 'Jadwal untuk :date pukul :time telah dibatalkan.',
+    'member_joined_title' => 'Anggota Baru Bergabung',
+    'member_joined_body' => ':name telah bergabung ke kelas :classroom',
 ];

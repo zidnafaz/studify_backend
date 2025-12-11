@@ -10,6 +10,8 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Services\NotificationService;
+use Mockery\MockInterface;
 
 class ClassroomTest extends TestCase
 {
@@ -19,6 +21,7 @@ class ClassroomTest extends TestCase
     protected $member;
     protected $nonMember;
     protected $token;
+    protected $notificationServiceMock;
 
     /**
      * Setup test environment
@@ -26,6 +29,17 @@ class ClassroomTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Mock Messaging to prevent Firebase connection attempts
+        $this->mock(\Kreait\Firebase\Contract\Messaging::class, function (MockInterface $mock) {
+            //
+        });
+
+        // Mock NotificationService
+        $this->notificationServiceMock = $this->mock(NotificationService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('sendToUsers')->byDefault();
+            $mock->shouldReceive('sendToUser')->byDefault();
+        });
 
         // Create users
         $this->owner = User::factory()->create();

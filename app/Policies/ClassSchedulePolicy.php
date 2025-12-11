@@ -23,7 +23,7 @@ class ClassSchedulePolicy
     public function view(User $user, Classroom $classroom)
     {
         // Owner always has access (untuk case belum join sebagai member)
-        if ($user->id === $classroom->owner_id) {
+        if ((int)$user->id === (int)$classroom->owner_id) {
             return true;
         }
 
@@ -45,7 +45,7 @@ class ClassSchedulePolicy
      */
     public function create(User $user, Classroom $classroom)
     {
-        return $user->id === $classroom->owner_id;
+        return (int)$user->id === (int)$classroom->owner_id;
     }
 
     /**
@@ -60,9 +60,9 @@ class ClassSchedulePolicy
      */
     public function update(User $user, ClassSchedule $schedule, Classroom $classroom)
     {
-        return $user->id === $classroom->owner_id
-            || $user->id === $schedule->coordinator_1
-            || $user->id === $schedule->coordinator_2;
+        return (int)$user->id === (int)$classroom->owner_id
+            || (int)$user->id === (int)$schedule->coordinator_1
+            || (int)$user->id === (int)$schedule->coordinator_2;
     }
 
     /**
@@ -77,8 +77,8 @@ class ClassSchedulePolicy
      */
     public function delete(User $user, ClassSchedule $schedule, Classroom $classroom)
     {
-        return $user->id === $classroom->owner_id
-            || $user->id === $schedule->coordinator_1
-            || $user->id === $schedule->coordinator_2;
+        return (int)$user->id === (int)$classroom->owner_id
+            || (int)$user->id === (int)$schedule->coordinator_1
+            || (int)$user->id === (int)$schedule->coordinator_2;
     }
 }
