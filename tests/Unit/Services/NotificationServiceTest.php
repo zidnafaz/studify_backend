@@ -60,7 +60,7 @@ class NotificationServiceTest extends TestCase
     public function it_can_send_notification_to_multiple_users()
     {
         $users = User::factory()->count(3)->create();
-        
+
         foreach ($users as $user) {
             DeviceToken::factory()->create([
                 'user_id' => $user->id,

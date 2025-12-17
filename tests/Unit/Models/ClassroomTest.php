@@ -50,7 +50,7 @@ class ClassroomTest extends TestCase
         Classroom::factory()->create(['unique_code' => 'ABC123']);
 
         $this->expectException(\Illuminate\Database\QueryException::class);
-        
+
         Classroom::factory()->create(['unique_code' => 'ABC123']);
     }
 

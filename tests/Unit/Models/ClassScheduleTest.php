@@ -28,7 +28,7 @@ class ClassScheduleTest extends TestCase
     {
         $classroom = Classroom::factory()->create();
         $schedule = ClassSchedule::factory()->create(['classroom_id' => $classroom->id]);
-        
+
         Reminder::factory()->count(2)->create([
             'remindable_type' => ClassSchedule::class,
             'remindable_id' => $schedule->id,

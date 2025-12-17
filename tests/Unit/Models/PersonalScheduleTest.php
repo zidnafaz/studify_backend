@@ -28,7 +28,7 @@ class PersonalScheduleTest extends TestCase
     {
         $user = User::factory()->create();
         $schedule = PersonalSchedule::factory()->create(['user_id' => $user->id]);
-        
+
         Reminder::factory()->count(2)->create([
             'remindable_type' => PersonalSchedule::class,
             'remindable_id' => $schedule->id,
