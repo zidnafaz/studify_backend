@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\PersonalSchedule;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,6 +18,8 @@ class ReminderFactory extends Factory
     public function definition(): array
     {
         return [
+            'remindable_type' => PersonalSchedule::class,
+            'remindable_id' => PersonalSchedule::factory(),
             'minutes_before_start' => $this->faker->randomElement([15, 30, 60, 1440]),
             'status' => 'pending',
         ];

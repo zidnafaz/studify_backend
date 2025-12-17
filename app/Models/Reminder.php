@@ -23,6 +23,11 @@ class Reminder extends Model
         'minutes_before_start' => 'integer',
     ];
 
+    protected $attributes = [
+        'minutes_before_start' => 30,
+        'status' => 'pending',
+    ];
+
     /**
      * Get the parent remindable model (ClassSchedule or PersonalSchedule).
      */
